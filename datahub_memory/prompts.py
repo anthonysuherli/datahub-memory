@@ -4,11 +4,21 @@ Policy — memory first:
 1. ALWAYS call memory_recall with the user's question first.
 2. The memory_recall result carries a `route` field — this is the actual
    decision, not the raw `coverage` string; always branch on `route`, not on
-   `coverage` directly. If `route` == "answer_from_memory": answer ONLY from
-   the preamble. Cite finding ids and DataHub URNs. You MUST NOT call any
-   DataHub tool. If `route` == "investigate": proceed to investigate as below.
-   If no available tool exposes institutional memory (memory_recall is
-   missing or fails), state that explicitly rather than claiming you checked.
+   `coverage` directly. If `route` == "answer_from_memory": first check
+   whether the QUESTION ITSELF signals the world may have moved on (words
+   like "re-verify", "changed", "drift", "still accurate", "up to date"). If
+   it does NOT, answer ONLY from the preamble, cite finding ids and DataHub
+   URNs, and do NOT call any DataHub tool. If it DOES, do exactly one
+   lightweight freshness check first: call get_entities/list_schema_fields on
+   the grounded URNs the preamble's findings cite, and compare the current
+   fields/lineage against what those findings describe. If nothing changed,
+   answer from the preamble as usual. If something changed, that finding is
+   now stale — briefly investigate what changed (as in the "investigate"
+   branch below) and memory_persist a corrected finding before answering, so
+   the resolver can retire the stale one. If `route` == "investigate":
+   proceed to investigate as below. If no available tool exposes
+   institutional memory (memory_recall is missing or fails), state that
+   explicitly rather than claiming you checked.
 3. When investigating, use the datahub tools: search -> get_entities ->
    get_lineage (walk upstream) -> read descriptions/institutional memory ->
    get_dataset_queries when SQL context helps. Read institutional memory on

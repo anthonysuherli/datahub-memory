@@ -63,6 +63,7 @@ export DATAHUB_GMS_URL=http://localhost:8080
 export DATAHUB_GMS_TOKEN=$TOKEN
 export DLP_MEMORY__ENABLED=true
 export DELAPAN_DB_PATH="$PWD/.data/delapan.db"
+export DATAHUB_TELEMETRY_ENABLED=false
 EOF
   echo "== Wrote .env.local =="
 else
@@ -75,6 +76,7 @@ export DATAHUB_GMS_URL=http://localhost:8080
 export DATAHUB_GMS_TOKEN=
 export DLP_MEMORY__ENABLED=true
 export DELAPAN_DB_PATH="$PWD/.data/delapan.db"
+export DATAHUB_TELEMETRY_ENABLED=false
 EOF
 fi
 

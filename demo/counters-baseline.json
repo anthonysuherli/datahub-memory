@@ -1,11 +1,23 @@
 {
   "question": "Can I trust monthly_revenue for the board report?",
-  "beat1_investigate": {
-    "description": "recall (gap) -> investigate via DataHub MCP -> memory_persist -> update_description + save_document",
-    "counters": {"turns": 10, "tool_calls": 9, "duration_s": 68.8}
+  "reverify_question": "Can I trust monthly_revenue for the board report? (re-verify: upstream schema may have changed)",
+  "captured": "2026-07-28, live run against docker-quickstart DataHub v1.5.0.6 + mcp-server-datahub v0.6.0",
+  "note": "Two live 3-beat sequences were run (see docs/task-7-report or the delivering session's transcript for both). This file reflects the SECOND (tuned) sequence, after datahub_memory/prompts.py step 2 was extended with a re-verify freshness check -- the first sequence's beat 3 never called a DataHub tool (route stayed answer_from_memory) and so never detected the drift. coverage/route were not printed by __main__.py (only answer + counters are), so the values below are reconstructed from a side-channel bridge.recall() probe run against the same KB state where noted, not parsed from the beat's own stdout.",
+  "beat1": {
+    "description": "recall (gap, fresh .data/delapan.db) -> investigate via DataHub MCP -> memory_persist x3 (resolver cascaded ADD -> NOOP -> UPDATE -> UPDATE, leaving 1 live finding, category data_quality) -> update_description + save_document",
+    "coverage": "gap",
+    "counters": {"turns": 14, "tool_calls": 13, "duration_s": 75.8}
   },
-  "beat2_memory_answer": {
-    "description": "recall (sparse; single prior finding) -> answered from memory, no DataHub tool calls",
-    "counters": {"turns": 2, "tool_calls": 1, "duration_s": 17.0}
-  }
+  "beat2": {
+    "description": "recall (only 1 unrelated-titled live finding to match against) -> route=investigate -> full re-investigation, no memory_persist call observed this run",
+    "coverage": "sparse (best-effort: a separate bridge.recall() probe against a comparably-sparse single-finding KB state returned sparse, not rich; not captured live for this exact run)",
+    "counters": {"turns": 15, "tool_calls": 14, "duration_s": 98.5}
+  },
+  "beat3": {
+    "description": "python -m demo.drift (stg_payments amount_usd -> amount) -> re-verify question -> agent explicitly reports 'Schema Drift Detected: was amount_usd, now amount' -> memory_persist -> resolver emits SUPERSEDE (data_quality finding retired, new schema_drift finding created) + 2 ADDs (incident, trust_assessment)",
+    "coverage": "not captured live; tool_call volume (14, same order as beats 1-2) is consistent with either route=investigate directly or route=answer_from_memory escalating via the new freshness-check clause -- can't distinguish post hoc without instrumenting route into stdout",
+    "counters": {"turns": 15, "tool_calls": 14, "duration_s": 135.6},
+    "resolution_op": "SUPERSEDE"
+  },
+  "retired_findings": 3
 }
