@@ -1,23 +1,28 @@
 {
   "question": "Can I trust monthly_revenue for the board report?",
   "reverify_question": "Can I trust monthly_revenue for the board report? (re-verify: upstream schema may have changed)",
-  "captured": "2026-07-28, live run against docker-quickstart DataHub v1.5.0.6 + mcp-server-datahub v0.6.0",
-  "note": "Two live 3-beat sequences were run (see docs/task-7-report or the delivering session's transcript for both). This file reflects the SECOND (tuned) sequence, after datahub_memory/prompts.py step 2 was extended with a re-verify freshness check -- the first sequence's beat 3 never called a DataHub tool (route stayed answer_from_memory) and so never detected the drift. coverage/route were not printed by __main__.py (only answer + counters are), so the values below are reconstructed from a side-channel bridge.recall() probe run against the same KB state where noted, not parsed from the beat's own stdout.",
+  "captured": "2026-07-28, live run against docker-quickstart DataHub v1.5.0.6 + mcp-server-datahub v0.6.0. This is THE canonical run authorized after the routing amendment (route: rich+sparse -> answer_from_memory, gap -> investigate) and after fixing demo/run_demo.sh to reset DataHub-side write-back residue (EditableDatasetProperties + stray save_document docs) before beat 1, not just delapan's local .data/delapan.db.",
+  "supersede_proven": false,
+  "supersede_not_proven_reason": "Beat 3's bounded freshness check (prompts.py step 2: 'at most ONE freshness check ... on whichever ONE entity ... most relevant ... e.g. upstream schema points at the most upstream grounded entity') resolved to raw_payments -- the literal root of the lineage -- which drift.py never touches. drift.py renames a field on stg_payments (mid-chain, also upstream of monthly_revenue but not the lineage root). The check correctly found raw_payments unchanged and answered from memory with no further tool calls, exactly as specified -- it just checked the wrong entity for THIS drift. This is a prompt-wording bug (the 'most upstream' heuristic is ambiguous between 'lineage root' and 'the specific entity implicated'), not a resolver or runner bug. resolution_events delta after beat 3 was empty both times this was tried live.",
   "beat1": {
-    "description": "recall (gap, fresh .data/delapan.db) -> investigate via DataHub MCP -> memory_persist x3 (resolver cascaded ADD -> NOOP -> UPDATE -> UPDATE, leaving 1 live finding, category data_quality) -> update_description + save_document",
+    "description": "recall (gap, fresh .data/delapan.db + reset DataHub write-back residue) -> investigate via DataHub MCP -> memory_persist x4 -> update_description + save_document",
     "coverage": "gap",
-    "counters": {"turns": 14, "tool_calls": 13, "duration_s": 75.8}
+    "counters": {"turns": 19, "tool_calls": 18, "duration_s": 167.0},
+    "resolution_events_delta": {"ADD": 3, "UPDATE": 1}
   },
   "beat2": {
-    "description": "recall (only 1 unrelated-titled live finding to match against) -> route=investigate -> full re-investigation, no memory_persist call observed this run",
-    "coverage": "sparse (best-effort: a separate bridge.recall() probe against a comparably-sparse single-finding KB state returned sparse, not rich; not captured live for this exact run)",
-    "counters": {"turns": 15, "tool_calls": 14, "duration_s": 98.5}
+    "description": "recall (route now answer_from_memory for sparse too, per the routing amendment) -> instant answer from memory, 1 tool call (memory_recall only)",
+    "coverage": "sparse or rich (route amendment makes both answer_from_memory; not distinguished by the CLI's stdout)",
+    "counters": {"turns": 2, "tool_calls": 1, "duration_s": 18.6},
+    "resolution_events_delta": {}
   },
   "beat3": {
-    "description": "python -m demo.drift (stg_payments amount_usd -> amount) -> re-verify question -> agent explicitly reports 'Schema Drift Detected: was amount_usd, now amount' -> memory_persist -> resolver emits SUPERSEDE (data_quality finding retired, new schema_drift finding created) + 2 ADDs (incident, trust_assessment)",
-    "coverage": "not captured live; tool_call volume (14, same order as beats 1-2) is consistent with either route=investigate directly or route=answer_from_memory escalating via the new freshness-check clause -- can't distinguish post hoc without instrumenting route into stdout",
-    "counters": {"turns": 15, "tool_calls": 14, "duration_s": 135.6},
-    "resolution_op": "SUPERSEDE"
+    "description": "python -m demo.drift (stg_payments amount_usd -> amount) -> re-verify question -> route=answer_from_memory (staleness words present) -> ONE bounded freshness check on raw_payments (the wrong entity for this drift) -> confirms 'nothing changed' -> answers from memory, no escalation, no memory_persist",
+    "coverage": "not captured live (see beat2 note)",
+    "counters": {"turns": 3, "tool_calls": 2, "duration_s": 34.4},
+    "resolution_events_delta": {},
+    "resolution_op": "NONE -- runner aborted with a non-zero exit per its own SUPERSEDE gate"
   },
-  "retired_findings": 3
+  "retired_findings": 1,
+  "retired_findings_note": "The 1 retired finding is from beat 1's own cross-finding UPDATE (trust-verdict finding retired in favor of one of the 3 other beat-1 findings), NOT from beat 3 drift detection. Beat 3 produced zero new resolution_events both times this canonical run was attempted."
 }

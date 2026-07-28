@@ -67,7 +67,14 @@ def _run_persist(project: str, kb: str, findings: list) -> dict:
 
 
 def route(coverage: str) -> str:
-    return "answer_from_memory" if coverage == "rich" else "investigate"
+    # Amendment (user-ratified 2026-07-28): "answer_from_memory" now covers
+    # both "rich" and "sparse" coverage -- only "gap" (nothing relevant
+    # banded at all) forces a real investigation. A memory-first product
+    # answers from what it knows and verifies freshness on demand, rather
+    # than re-deriving everything from scratch at partial coverage. See
+    # prompts.py step 2 for the bounded freshness-check mechanism this
+    # relies on.
+    return "investigate" if coverage == "gap" else "answer_from_memory"
 
 
 @tool("memory_recall", "Tap the KB for prior grounded knowledge about a question",
