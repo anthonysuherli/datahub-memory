@@ -61,6 +61,7 @@ if [ -n "$TOKEN" ]; then
   cat > .env.local <<EOF
 export DATAHUB_GMS_URL=http://localhost:8080
 export DATAHUB_GMS_TOKEN=$TOKEN
+export DLP_MEMORY__ENABLED=true
 EOF
   echo "== Wrote .env.local =="
 else
@@ -71,6 +72,7 @@ else
   cat > .env.local <<EOF
 export DATAHUB_GMS_URL=http://localhost:8080
 export DATAHUB_GMS_TOKEN=
+export DLP_MEMORY__ENABLED=true
 EOF
 fi
 
