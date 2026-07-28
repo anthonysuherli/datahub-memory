@@ -1,0 +1,8 @@
+delapan[local] @ file:///Users/anthonysuherli/Repositories/8star/delapan-ai/backend
+claude-agent-sdk
+acryl-datahub
+
+[dev]
+pytest
+pytest-asyncio
+ruff

@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "datahub-memory"
+version = "0.1.0"
+description = "Grounded institutional memory for data teams: DataHub agent with delapan write-time-resolved memory"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+dependencies = [
+    "delapan[local] @ file:///Users/anthonysuherli/Repositories/8star/delapan-ai/backend",
+    "claude-agent-sdk",
+    "acryl-datahub",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-asyncio", "ruff"]
+
+[tool.setuptools]
+packages = ["datahub_memory"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
