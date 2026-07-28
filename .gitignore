@@ -4,3 +4,4 @@ __pycache__/
 *.db
 .truenorth/
 *.egg-info/
+.env.local
