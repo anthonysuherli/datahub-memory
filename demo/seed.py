@@ -1,4 +1,5 @@
 """Seed the demo catalog: 4-dataset revenue chain with lineage + one seeded incident."""
+# Run from repo root: python -m demo.seed
 from datahub.emitter.mce_builder import make_dataset_urn
 from datahub.emitter.mcp import MetadataChangeProposalWrapper
 from datahub.emitter.rest_emitter import DatahubRestEmitter

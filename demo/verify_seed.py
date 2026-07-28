@@ -1,3 +1,4 @@
+# Run from repo root: python -m demo.verify_seed
 import os, requests
 
 def main():
