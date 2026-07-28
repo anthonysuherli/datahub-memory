@@ -14,8 +14,8 @@ def local_delapan(tmp_path, monkeypatch):
     async def fake_embed_text(text):
         return (await fake_embed_batch([text]))[0]
 
-    import delapan.core.memory.persist as persist_mod
     import delapan.core.agent.preamble as preamble_mod
+    import delapan.core.memory.persist as persist_mod
     monkeypatch.setattr(persist_mod, "embed_batch", fake_embed_batch)
     monkeypatch.setattr(preamble_mod, "embed_text", fake_embed_text)
     yield

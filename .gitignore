@@ -5,3 +5,4 @@ __pycache__/
 .truenorth/
 *.egg-info/
 .env.local
+.DS_Store

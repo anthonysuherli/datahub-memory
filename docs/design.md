@@ -1,7 +1,7 @@
 # Design: "Data Memory" — DataHub Agent Hackathon submission
 
 **Date:** 2026-07-27
-**Status:** Draft for user review
+**Status:** Original design draft (2026-07-27), superseded in places by what shipped — see README.md and docs/R1-decision.md for current behavior.
 **Target:** [Build with DataHub: The Agent Hackathon](https://datahub.devpost.com/) — Challenge 1
 ("Agents That Do Real Work"), deadline **Aug 10, 2026, 5:00pm EDT**, judging Aug 17–31.
 

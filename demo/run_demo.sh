@@ -17,6 +17,8 @@ source .venv/bin/activate
 # per agent turn and would otherwise inherit an unset value.
 export DATAHUB_TELEMETRY_ENABLED=false
 
+command -v sqlite3 >/dev/null || { echo "sqlite3 required (the gate reads resolution_events)"; exit 1; }
+
 DB_PATH="${DELAPAN_DB_PATH:-$PWD/.data/delapan.db}"
 PRE_BEAT3_OPS_FILE="$(dirname "$DB_PATH")/.pre_beat3_ops.snapshot"
 PRE_BEAT3_RETIRED_FILE="$(dirname "$DB_PATH")/.pre_beat3_retired.snapshot"

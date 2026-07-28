@@ -46,4 +46,6 @@ Full agent loop: memory-first, DataHub-grounded, write back what you learn.
 - No available tool exposes institutional memory (`memory_recall` missing or
   fails): say so explicitly rather than claiming you checked.
 - `DATAHUB_GMS_URL` unset for the `datahub` MCP server: DataHub tool calls
-  will fail outright — tell the user to set it (see plugin `.env.example`).
+  will fail outright — tell the user the key must be present in the process
+  environment before Claude Code starts (e.g. exported in the shell profile),
+  not just set in a plugin-root `.env` (see `.env.example`).

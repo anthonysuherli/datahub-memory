@@ -39,4 +39,6 @@ Answer from what's already known, verified when asked.
 - `memory_recall` missing or fails: state that explicitly rather than
   claiming you checked memory.
 - Result contains an `error` mentioning a credential: tell the user which
-  env var to set in the plugin root's `.env` (see `.env.example`).
+  env var is missing — it must be present in the process environment before
+  Claude Code starts (e.g. exported in the shell profile), not just set in
+  the plugin root's `.env` (see `.env.example`).

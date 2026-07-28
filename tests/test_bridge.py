@@ -39,11 +39,15 @@ def test_check_drift_flags_changed_hash():
 def test_persist_resolves_duplicate_at_write_time(local_delapan, monkeypatch):
     """memory.enabled=True: a second write of the same finding must be resolved
     (NOOP/UPDATE) against the existing row, not appended as a second ADD."""
+    import delapan.core.memory.resolver as resolver_mod
     from delapan.core.config import get_config
-    from delapan.core.memory.models import ResolutionBatch, ResolutionDecision, ResolutionOp
+    from delapan.core.memory.models import (
+        ResolutionBatch,
+        ResolutionDecision,
+        ResolutionOp,
+    )
     from delapan.mcp.tenancy import resolve_tenant
     from delapan.store import get_store
-    import delapan.core.memory.resolver as resolver_mod
 
     async def fake_structured_completion(*, model, response_format, system, user,
                                           temperature=0.0, fallback_model=None,

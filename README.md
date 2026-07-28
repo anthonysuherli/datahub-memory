@@ -17,19 +17,20 @@ Three beats, one question ("Can I trust `monthly_revenue` for the board report?"
 | Beat | Turns | Tool calls | Duration | What it proves |
 |---|---|---|---|---|
 | 1 — investigate (fresh memory) | 15 | 14 | 102.3s | Full investigation: search → lineage → institutional memory → 4 `memory_persist` calls (resolver: 4× `ADD`) → write-back (`update_description` on `stg_payments`, `save_document` for the report). |
-| 2 — inherit (same question, fresh session) | 2 | 1 | 21.2s | Instant answer from memory: one `memory_recall` call, zero DataHub tool calls, cites beat 1's finding ids and URNs directly. ~5x fewer turns, ~14x fewer tool calls, ~5x faster than beat 1. |
+| 2 — inherit (same question, fresh session) | 2 | 1 | 21.2s | Instant answer from memory: one `memory_recall` call, zero DataHub tool calls, cites beat 1's finding ids and URNs directly. ~7x fewer turns, ~14x fewer tool calls, ~5x faster than beat 1. |
 | 3 — drift → re-verify | 16 | 15 | 159.7s | `demo/drift.py` renames `stg_payments.amount_usd` → `amount`. Re-asking the same question (worded to signal possible staleness) routes to memory first, but the deterministic `check_freshness` tool re-hashes the grounded entities against DataHub's *current* state, flags `stg_payments` as changed, and forces a targeted re-investigation. Resolver: `ADD` (new schema-drift finding) + `UPDATE` (retires the stale beat-1 trust-verdict finding, `75a5ab8b` → `aabef4d1`). |
 
 The retirement in beat 3 is bi-temporal — the stale finding's `invalidated_at` is set, nothing is deleted, and `resolution_events` keeps a permanent record of why. The resolver classified this particular retirement as `UPDATE` rather than `SUPERSEDE`; both route through the same `store.supersede_finding` code path, so the op label is the resolver's refine-vs-contradict judgment call, not a different mechanism — the bi-temporal retirement is the point being demonstrated, not the label. See `docs/sample-outputs.md` for the real finding content and resolution-event rows behind this table.
 
 ## Quickstart for judges
 
-Prerequisites: Docker running, Python 3.11+, [`uv`](https://astral.sh/uv/) (for the plugin form) or a plain venv (for the CLI form).
+Prerequisites: Docker running, Python 3.11+, git, sqlite3, and [uv](https://docs.astral.sh/uv/) (required — both forms spawn `uvx mcp-server-datahub`).
 
 ```bash
 # 1. Install (creates .venv, pulls delapan[local] + claude-agent-sdk + acryl-datahub)
 python3 -m venv .venv
-.venv/bin/pip install -e ".[dev]"
+source .venv/bin/activate
+pip install -e ".[dev]"
 
 # 2. Bring up DataHub + mint a personal access token -> writes .env.local
 demo/quickstart.sh
@@ -116,7 +117,7 @@ This registers two stdio MCP servers (`memory` — a `FastMCP` wrapper around th
 - `/datahub-memory:recall` — memory-only lookup with the bounded freshness check; escalates to `/investigate` on `gap` coverage or confirmed drift.
 - `/datahub-memory:writeback` — attach a description or report to a DataHub entity; DataHub's own mutation tools first, the emitter fallback tools only if those fail.
 
-Requires `uv` on the host (the launcher script installs on first run if missing) and the same environment variables as the CLI (`DATAHUB_GMS_URL`, `DATAHUB_GMS_TOKEN`, `AI_GATEWAY_API_KEY`/`OPENAI_API_KEY`).
+Requires `uv` on the host (the launcher prints the install command and exits if it's missing) and the same environment variables as the CLI (`DATAHUB_GMS_URL`, `DATAHUB_GMS_TOKEN`, `AI_GATEWAY_API_KEY`/`OPENAI_API_KEY`).
 
 ## Upstream contribution
 

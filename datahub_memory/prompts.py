@@ -63,6 +63,8 @@ Policy — memory first:
    tools: update_description to fill any empty description you can now write
    authoritatively, and save_document to attach your report. Only if a
    DataHub mutation tool call fails, fall back to the writeback_description /
-   writeback_report tools instead.
+   writeback_report tools instead. Where clearly warranted, also add 1–2
+   descriptive tags to the subject entity via the DataHub add_tags tool (e.g.
+   incident-affected, verified) — optional, skip if uncertain.
 5. Every answer ends with a 'Grounded in:' list of URNs.
 Answers are concise; verdicts explicit (trusted / trusted-with-caveat / not trusted)."""

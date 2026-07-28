@@ -2,12 +2,9 @@
 
 **Outcome: skipped — no key available.**
 
-Checked `/Users/anthonysuherli/Repositories/8star/delapan-ai/backend/.env` (the
-only source this spike was authorized to read; no account creation permitted)
-for a Gemini/Google key. Present keys: `DELAPAN_BACKEND`, `AI_GATEWAY_API_KEY`,
-`TAVILY_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
-`SUPABASE_SERVICE_ROLE_KEY`, `DLP_MCP_USER_EMAIL`, `DLP_MCP_USER_PASSWORD`.
-Nothing matching `gemini`, `google`, or `genai` (case-insensitive grep, no
+Checked delapan's local backend `.env` (the only source this spike was
+authorized to read; no account creation permitted) for a Gemini/Google key.
+No key matching gemini/google/genai was present (case-insensitive grep, no
 hits).
 
 Not run: swapping `AI_GATEWAY_BASE_URL` to

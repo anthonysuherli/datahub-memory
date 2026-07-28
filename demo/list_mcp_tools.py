@@ -27,14 +27,13 @@ async def main() -> None:
     env["DATAHUB_TELEMETRY_ENABLED"] = "false"
     params = StdioServerParameters(command="uvx", args=["mcp-server-datahub"], env=env)
 
-    async with stdio_client(params) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            result = await session.list_tools()
-            print(f"mutation_enabled={env.get('TOOLS_IS_MUTATION_ENABLED', 'unset')}")
-            print(f"tool_count={len(result.tools)}")
-            for tool in result.tools:
-                print(f"- {tool.name}")
+    async with stdio_client(params) as (read, write), ClientSession(read, write) as session:
+        await session.initialize()
+        result = await session.list_tools()
+        print(f"mutation_enabled={env.get('TOOLS_IS_MUTATION_ENABLED', 'unset')}")
+        print(f"tool_count={len(result.tools)}")
+        for tool in result.tools:
+            print(f"- {tool.name}")
 
 
 if __name__ == "__main__":

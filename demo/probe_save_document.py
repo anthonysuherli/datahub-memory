@@ -37,36 +37,35 @@ async def main() -> None:
 
     params = StdioServerParameters(command="uvx", args=["mcp-server-datahub"], env=env)
 
-    print(f"Spawning mcp-server-datahub with TOOLS_IS_MUTATION_ENABLED=true")
+    print("Spawning mcp-server-datahub with TOOLS_IS_MUTATION_ENABLED=true")
     print(f"GMS URL: {gms_url}")
     print()
 
-    async with stdio_client(params) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
+    async with stdio_client(params) as (read, write), ClientSession(read, write) as session:
+        await session.initialize()
 
-            # Call save_document with test data.
-            print("Calling save_document...")
-            result = await session.call_tool(
-                "save_document",
-                {
-                    "title": "R1 verification doc",
-                    "content": "Created by datahub-memory Task 2 R1 verification script.",
-                    "document_type": "Note",
-                },
-            )
+        # Call save_document with test data.
+        print("Calling save_document...")
+        result = await session.call_tool(
+            "save_document",
+            {
+                "title": "R1 verification doc",
+                "content": "Created by datahub-memory Task 2 R1 verification script.",
+                "document_type": "Note",
+            },
+        )
 
-            # Print the response.
-            print()
-            print("Response:")
-            if hasattr(result, "content") and result.content:
-                for content_block in result.content:
-                    if hasattr(content_block, "text"):
-                        print(content_block.text)
-                    else:
-                        print(json.dumps(content_block, indent=2, default=str))
-            else:
-                print(json.dumps(result, indent=2, default=str))
+        # Print the response.
+        print()
+        print("Response:")
+        if hasattr(result, "content") and result.content:
+            for content_block in result.content:
+                if hasattr(content_block, "text"):
+                    print(content_block.text)
+                else:
+                    print(json.dumps(content_block, indent=2, default=str))
+        else:
+            print(json.dumps(result, indent=2, default=str))
 
 
 if __name__ == "__main__":

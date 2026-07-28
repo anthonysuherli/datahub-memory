@@ -1,6 +1,6 @@
 # Sample outputs (canonical run)
 
-Everything on this page is pulled verbatim from the canonical run behind `demo/counters-baseline.json` (2026-07-28, live against docker-quickstart DataHub v1.5.0.6 + `mcp-server-datahub` v0.6.0). Sources: the run's own `.data/delapan.db` (still on disk, unmodified since that run) and `docs/../../.../task-7-report.md`'s "Fix report 2 — Step 3" section, which is the fix round that produced this exact baseline. No text below has been reworded.
+Everything on this page is pulled verbatim from the canonical run behind `demo/counters-baseline.json` (2026-07-28, live against docker-quickstart DataHub v1.5.0.6 + `mcp-server-datahub` v0.6.0). Sources: the canonical run's own `.data/delapan.db` (unmodified since that run) and the build log that produced `demo/counters-baseline.json` (internal, not published). No text below has been reworded.
 
 ## 1. A real agent answer
 

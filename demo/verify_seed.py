@@ -1,5 +1,8 @@
 # Run from repo root: python -m demo.verify_seed
-import os, requests
+import os
+
+import requests
+
 
 def main():
     gms = os.environ["DATAHUB_GMS_URL"]

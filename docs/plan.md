@@ -1,6 +1,6 @@
 # "Data Memory" (DataHub hackathon) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use truenorth:subagent-driven-development (recommended) or truenorth:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+**Status: all 10 tasks complete** (see git history; checkboxes left unticked — the plan was executed task-by-task by subagents).
 
 **Goal:** Build and submit `datahub-memory` — an agent that investigates data questions via DataHub's MCP server, persists conclusions as delapan findings grounded in DataHub URNs, and writes distilled knowledge back to DataHub — for the Build with DataHub hackathon (Challenge 1, deadline Aug 10 2026 5pm EDT).
 
@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Repo path: `/Users/anthonysuherli/Repositories/8star/datahub-memory` (sibling of `delapan-ai/` — never inside it).
+- Repo path: new standalone repo, outside the delapan working tree.
 - License: Apache-2.0 from the first commit (hackathon rule).
 - All submission code is new work; delapan is a disclosed pre-existing dependency (README section "Pre-existing code disclosure").
 - DataHub quickstart must be ≥ 1.4.x (document operations); `mcp-server-datahub` ≥ v0.5.0 (mutation tools; latest is v0.6.0).

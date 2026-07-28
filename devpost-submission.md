@@ -56,10 +56,12 @@ Measured on a live 3-beat run: the second time the same question is asked, the a
 
 ## Testing instructions for judges
 
-**Prerequisites:** Docker running, Python 3.11+, `uv` (only if testing the Claude Code plugin form).
+**Prerequisites:** Docker running, Python 3.11+, git, sqlite3, and [uv](https://docs.astral.sh/uv/) (required — both forms spawn `uvx mcp-server-datahub`).
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
 demo/quickstart.sh          # docker quickstart + token mint -> .env.local
 source .env.local
 python -m demo.seed         # seed the demo catalog + incident document

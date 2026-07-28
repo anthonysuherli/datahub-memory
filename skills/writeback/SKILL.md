@@ -34,4 +34,6 @@ Record what was learned on the entity itself, not just in the KB.
   `detail` field verbatim (e.g. GMS unreachable) — do not report the write
   as successful.
 - `DATAHUB_GMS_URL` unset: both the mutation tools and the fallback tools
-  will fail — tell the user to set it (see plugin `.env.example`).
+  will fail — tell the user the key must be present in the process
+  environment before Claude Code starts (e.g. exported in the shell profile),
+  not just set in a plugin-root `.env` (see `.env.example`).
