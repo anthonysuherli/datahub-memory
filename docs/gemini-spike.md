@@ -12,9 +12,15 @@ hits).
 
 Not run: swapping `AI_GATEWAY_BASE_URL` to
 `https://generativelanguage.googleapis.com/v1beta/openai/` and re-running
-delapan's embed path against a throwaway `DELAPAN_DB_PATH`. The anticipated
-failure mode (per the task brief) would have been a dimension mismatch —
-delapan's SQLite `vec0` table is hardcoded to 1536-dim
-(`delapan/core/store/sqlite.py`) and doesn't pass a `dimensions` param, while
-Gemini's embedding default is 3072-dim — but this was never exercised since
-there's no key to test with.
+delapan's embed path against a throwaway `DELAPAN_DB_PATH`.
+
+Correction (review pass, task 6): the module is `delapan/store/sqlite.py`,
+not `delapan/core/store/sqlite.py`. More importantly, the anticipated failure
+mode above was wrong: delapan's SQLite `vec0` table is hardcoded to 1536-dim,
+but `embed_text`/`embed_batch` (`delapan/core/clients/embeddings.py:49` and
+`:64`) DO pass `dimensions=emb.dim` on every embeddings.create call — that
+param exists precisely to pin the output width regardless of provider
+default (Gemini's is 3072-dim). So a straight dimension mismatch is not the
+expected failure; the swap is plausible as long as Gemini's OpenAI-compatible
+endpoint honors `dimensions` for its embedding models. Whether it actually
+does remains unverified — status stays skipped: no key.
