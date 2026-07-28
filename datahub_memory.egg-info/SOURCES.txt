@@ -1,9 +1,0 @@
-LICENSE
-pyproject.toml
-datahub_memory/__init__.py
-datahub_memory.egg-info/PKG-INFO
-datahub_memory.egg-info/SOURCES.txt
-datahub_memory.egg-info/dependency_links.txt
-datahub_memory.egg-info/requires.txt
-datahub_memory.egg-info/top_level.txt
-tests/test_delapan_dep.py
