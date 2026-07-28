@@ -6,7 +6,7 @@ Everything on this page is pulled verbatim from the canonical run behind `demo/c
 
 ### Beat 1 — investigate (full finding content, as stored)
 
-Beat 1 asked *"Can I trust monthly_revenue for the board report?"* against a fresh (`gap`-coverage) memory. The agent walked DataHub (search → lineage → institutional memory) and called `memory_persist` four times. This is finding `75a5ab8bb3574451a94fd34aa2b8db30`'s content column, verbatim, as it was written to `.data/delapan.db`:
+Beat 1 asked *"Can I trust monthly_revenue for the board report?"* against a fresh (`gap`-coverage) memory. The agent walked DataHub (search → lineage → institutional memory) and called `memory_persist` four times, resolving to 3 new findings and 1 corroboration. This is finding `75a5ab8bb3574451a94fd34aa2b8db30`'s content column, verbatim, as it was written to `.data/delapan.db`:
 
 ```
 **Question**: Can I trust monthly_revenue for the board report?
@@ -33,7 +33,7 @@ trustworthy for board reports.
 ```
 ```
 
-Counters for this beat: `{"turns": 15, "tool_calls": 14, "duration_s": 102.3}`. `resolution_events` delta: `ADD: +4` (this finding plus three siblings — incident impact, lineage structure, and schema/purpose — one `memory_persist` call each, all `ADD`, no cross-finding collisions this run).
+Counters for this beat: `{"turns": 17, "tool_calls": 16, "duration_s": 127.2}`. `resolution_events` delta: `ADD: +3, NOOP: +1` (this finding plus siblings — incident impact, lineage structure, and schema/purpose — one `memory_persist` call each; the NOOP represents a corroboration finding that matched an existing one, no cross-finding collisions this run).
 
 ### Beat 3 — drift → re-verify (live terminal answer, quoted from the fix-round report)
 
@@ -93,7 +93,7 @@ Current monthly_revenue data is trustworthy for board reports.
 ```
 ```
 
-Counters for this beat: `{"turns": 16, "tool_calls": 15, "duration_s": 159.7}`.
+Counters for this beat: `{"turns": 11, "tool_calls": 10, "duration_s": 98.4}`.
 
 ## 2. resolution_events / ops-delta
 
@@ -114,13 +114,14 @@ Reduced to `demo/run_demo.sh`'s own ops-delta form (per-beat, what its `ops_delt
 
 ```
 --- resolution_events delta after beat 1 ---
-  ADD: +4
+  ADD: +3
+  NOOP: +1
 
 --- resolution_events delta after beat 2 ---
   (no new resolution_events)
 
 --- resolution_events delta after beat 3 (re-verify) ---
-  ADD: +1
+  ADD: +2
   UPDATE: +1
 ```
 
