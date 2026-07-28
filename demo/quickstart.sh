@@ -59,8 +59,8 @@ TOKEN="$(echo "$TOKEN_RESPONSE" | python3 -c 'import json,sys; d=json.load(sys.s
 
 if [ -n "$TOKEN" ]; then
   cat > .env.local <<EOF
-DATAHUB_GMS_URL=http://localhost:8080
-DATAHUB_GMS_TOKEN=$TOKEN
+export DATAHUB_GMS_URL=http://localhost:8080
+export DATAHUB_GMS_TOKEN=$TOKEN
 EOF
   echo "== Wrote .env.local =="
 else
@@ -69,8 +69,8 @@ else
   echo "== policy still hasn't propagated -- try re-running this script, or generate a token"
   echo "== manually via http://localhost:9002/settings/tokens. Recording GMS URL only. =="
   cat > .env.local <<EOF
-DATAHUB_GMS_URL=http://localhost:8080
-DATAHUB_GMS_TOKEN=
+export DATAHUB_GMS_URL=http://localhost:8080
+export DATAHUB_GMS_TOKEN=
 EOF
 fi
 
