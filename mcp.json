@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "memory": {
+      "type": "stdio",
+      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/mcp-server.sh"
+    },
+    "datahub": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-datahub"],
+      "env": {
+        "DATAHUB_GMS_URL": "${DATAHUB_GMS_URL}",
+        "DATAHUB_GMS_TOKEN": "${DATAHUB_GMS_TOKEN}",
+        "TOOLS_IS_MUTATION_ENABLED": "true",
+        "DATAHUB_TELEMETRY_ENABLED": "false"
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "datahub-memory",
+  "owner": {
+    "name": "Anthony Suherli",
+    "email": "anthonysuherli@gmail.com"
+  },
+  "metadata": {
+    "description": "datahub-memory — grounded institutional memory for data teams: DataHub investigation agent + delapan write-time-resolved memory.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "datahub-memory",
+      "source": "./",
+      "description": "DataHub investigation agent with delapan write-time-resolved memory. /datahub-memory:investigate, /datahub-memory:recall, /datahub-memory:writeback over the memory + datahub MCP servers.",
+      "version": "0.1.0",
+      "strict": false
+    }
+  ]
+}
