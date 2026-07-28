@@ -1,28 +1,28 @@
 {
   "question": "Can I trust monthly_revenue for the board report?",
   "reverify_question": "Can I trust monthly_revenue for the board report? (re-verify: upstream schema may have changed)",
-  "captured": "2026-07-28, live run against docker-quickstart DataHub v1.5.0.6 + mcp-server-datahub v0.6.0. This is THE canonical run authorized after the routing amendment (route: rich+sparse -> answer_from_memory, gap -> investigate) and after fixing demo/run_demo.sh to reset DataHub-side write-back residue (EditableDatasetProperties + stray save_document docs) before beat 1, not just delapan's local .data/delapan.db.",
+  "captured": "2026-07-28, live run against docker-quickstart DataHub v1.5.0.6 + mcp-server-datahub v0.6.0. This is THE canonical run for the 'Fix report 2' round: the staleness check is now the deterministic check_freshness tool (bridge.snapshot_hash recomputed from DataHub's CURRENT schema/lineage), replacing the model-judgment 'pick one entity' heuristic from the previous round. This is the last authorized attempt for this round per the coordinator's instruction.",
   "supersede_proven": false,
-  "supersede_not_proven_reason": "Beat 3's bounded freshness check (prompts.py step 2: 'at most ONE freshness check ... on whichever ONE entity ... most relevant ... e.g. upstream schema points at the most upstream grounded entity') resolved to raw_payments -- the literal root of the lineage -- which drift.py never touches. drift.py renames a field on stg_payments (mid-chain, also upstream of monthly_revenue but not the lineage root). The check correctly found raw_payments unchanged and answered from memory with no further tool calls, exactly as specified -- it just checked the wrong entity for THIS drift. This is a prompt-wording bug (the 'most upstream' heuristic is ambiguous between 'lineage root' and 'the specific entity implicated'), not a resolver or runner bug. resolution_events delta after beat 3 was empty both times this was tried live.",
+  "supersede_not_proven_reason": "check_freshness correctly identified stg_payments (not raw_payments -- the previous round's failure mode is fixed) as the drifted entity: resolution_events shows an ADD for a new 'schema' finding documenting the stg_payments drift, plus an UPDATE that retired the original beat-1 trust-verdict finding (75a5ab8b) in favor of a re-verified one (aabef4d1). The bi-temporal retirement is real and correct -- delapan's resolver just classified it as UPDATE rather than SUPERSEDE. Per this round's explicit instruction ('if SUPERSEDE still isn't proven after this, stop and report honestly'), this is reported as-is; no further live runs were spent chasing the specific op label.",
   "beat1": {
     "description": "recall (gap, fresh .data/delapan.db + reset DataHub write-back residue) -> investigate via DataHub MCP -> memory_persist x4 -> update_description + save_document",
     "coverage": "gap",
-    "counters": {"turns": 19, "tool_calls": 18, "duration_s": 167.0},
-    "resolution_events_delta": {"ADD": 3, "UPDATE": 1}
+    "counters": {"turns": 15, "tool_calls": 14, "duration_s": 102.3},
+    "resolution_events_delta": {"ADD": 4}
   },
   "beat2": {
-    "description": "recall (route now answer_from_memory for sparse too, per the routing amendment) -> instant answer from memory, 1 tool call (memory_recall only)",
+    "description": "recall (route now answer_from_memory for sparse too) -> instant answer from memory, 1 tool call (memory_recall only), cites finding ids directly",
     "coverage": "sparse or rich (route amendment makes both answer_from_memory; not distinguished by the CLI's stdout)",
-    "counters": {"turns": 2, "tool_calls": 1, "duration_s": 18.6},
+    "counters": {"turns": 2, "tool_calls": 1, "duration_s": 21.2},
     "resolution_events_delta": {}
   },
   "beat3": {
-    "description": "python -m demo.drift (stg_payments amount_usd -> amount) -> re-verify question -> route=answer_from_memory (staleness words present) -> ONE bounded freshness check on raw_payments (the wrong entity for this drift) -> confirms 'nothing changed' -> answers from memory, no escalation, no memory_persist",
+    "description": "python -m demo.drift (stg_payments amount_usd -> amount) -> re-verify question -> route=answer_from_memory (staleness words present) -> check_freshness call over the full grounded array -> changed=[stg_payments urn] -> re-investigate stg_payments -> memory_persist a new schema-drift finding + a re-verified trust-verdict finding -> resolver: ADD (new schema finding) + UPDATE (retires the stale trust-verdict finding)",
     "coverage": "not captured live (see beat2 note)",
-    "counters": {"turns": 3, "tool_calls": 2, "duration_s": 34.4},
-    "resolution_events_delta": {},
-    "resolution_op": "NONE -- runner aborted with a non-zero exit per its own SUPERSEDE gate"
+    "counters": {"turns": 16, "tool_calls": 15, "duration_s": 159.7},
+    "resolution_events_delta": {"ADD": 1, "UPDATE": 1},
+    "resolution_op": "UPDATE (not SUPERSEDE) -- runner's SUPERSEDE-specific gate still aborted with a non-zero exit; the retirement itself is real (see supersede_not_proven_reason)"
   },
   "retired_findings": 1,
-  "retired_findings_note": "The 1 retired finding is from beat 1's own cross-finding UPDATE (trust-verdict finding retired in favor of one of the 3 other beat-1 findings), NOT from beat 3 drift detection. Beat 3 produced zero new resolution_events both times this canonical run was attempted."
+  "retired_findings_note": "The 1 retired finding is the beat-1 trust-verdict finding (75a5ab8b), retired in beat 3 by the UPDATE resolution event that fired immediately after check_freshness flagged stg_payments as changed and the agent re-investigated. This IS the drift-triggered retirement the demo is meant to show -- it's correctly attributed to beat 3 this time, unlike the previous round's attempts."
 }

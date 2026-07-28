@@ -17,6 +17,7 @@ from claude_agent_sdk import (
     query,
     tool,
 )
+from datahub.metadata.schema_classes import SchemaMetadataClass, UpstreamLineageClass
 
 from datahub_memory import bridge, writeback
 from datahub_memory.prompts import SYSTEM
@@ -112,6 +113,75 @@ async def memory_persist(args):
     return {"content": [{"type": "text", "text": json.dumps(out)}]}
 
 
+def _current_fields(urn: str) -> list[dict]:
+    """CURRENT schema fields for urn, in the exact {fieldPath, nativeDataType}
+    shape and alphabetical-by-fieldPath order the datahub MCP server's
+    get_entities/list_schema_fields tools hand the agent -- verified live
+    against a real persisted finding's stored snapshot_hash (task-7 report,
+    Fix report 2) before this was written, since bridge.snapshot_hash hashes
+    the fields list in the order given, not sorted."""
+    aspect = writeback._graph().get_aspect(urn, SchemaMetadataClass)
+    fields = aspect.fields if aspect is not None else []
+    return sorted(
+        ({"fieldPath": f.fieldPath, "nativeDataType": f.nativeDataType} for f in fields),
+        key=lambda d: d["fieldPath"],
+    )
+
+
+def _direct_upstreams(urn: str) -> list[str]:
+    aspect = writeback._graph().get_aspect(urn, UpstreamLineageClass)
+    if aspect is None:
+        return []
+    return [u.dataset for u in aspect.upstreams]
+
+
+def _transitive_upstreams(urn: str) -> list[str]:
+    seen: set[str] = set()
+    frontier = [urn]
+    while frontier:
+        for up in _direct_upstreams(frontier.pop()):
+            if up not in seen:
+                seen.add(up)
+                frontier.append(up)
+    return sorted(seen)
+
+
+def _is_fresh(urn: str, stored_hash: str) -> bool:
+    """True if urn's CURRENT schema+lineage still hashes to stored_hash.
+
+    memory_persist's `upstream_urns` comes straight from whatever the agent
+    passed after its OWN get_lineage call, and that has been observed live
+    to vary run-to-run between "direct upstream only" and "full transitive
+    closure to the lineage root" -- both conventions were confirmed against
+    real stored snapshot_hash values (see task-7 report, Fix report 2), and
+    there's no way to know in advance which one a given finding used. Rather
+    than guess, accept a match under EITHER convention: a real schema/lineage
+    change breaks the hash under both, so this can't paper over an actual
+    drift -- it only avoids a false "changed" caused by upstream-depth
+    reporting variance that isn't a drift at all.
+    """
+    fields = _current_fields(urn)
+    direct, transitive = _direct_upstreams(urn), _transitive_upstreams(urn)
+    candidates = {bridge.snapshot_hash(fields, direct), bridge.snapshot_hash(fields, transitive)}
+    return stored_hash in candidates
+
+
+@tool("check_freshness",
+      "Deterministically check whether grounded DataHub entities have drifted "
+      "since a finding was persisted: recompute each URN's snapshot_hash from "
+      "its CURRENT schema fields + lineage and compare to the recorded hash. "
+      "No model judgment involved -- use this instead of guessing from memory.",
+      {"grounded": list})
+async def check_freshness(args):
+    grounded = args["grounded"]
+    changed = [
+        g["urn"] for g in grounded
+        if not await asyncio.to_thread(_is_fresh, g["urn"], g["snapshot_hash"])
+    ]
+    out = {"changed": changed, "checked": len(grounded)}
+    return {"content": [{"type": "text", "text": json.dumps(out)}]}
+
+
 @tool("writeback_description",
       "Fallback only: fill an empty/stale dataset description in DataHub. Use this "
       "only if the DataHub MCP server's own update_description tool call failed.",
@@ -135,7 +205,8 @@ async def writeback_report(args):
 
 MEMORY_SERVER = create_sdk_mcp_server(
     name="memory", version="0.1.0",
-    tools=[memory_recall, memory_persist, writeback_description, writeback_report])
+    tools=[memory_recall, memory_persist, check_freshness,
+           writeback_description, writeback_report])
 
 
 async def run_question(question: str, project: str = "dh-demo", kb: str = "main") -> dict:

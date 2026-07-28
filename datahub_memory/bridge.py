@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import re
 from uuid import uuid4
 
 from delapan.core.agent.preamble import select_preamble
@@ -56,11 +57,48 @@ def persist(project: str, kb: str, findings: list[Finding]) -> dict:
     return {"ops": ops, "affected_ids": list(outcome.affected_finding_ids)}
 
 
+_CONTENT_RE = re.compile(r"<content>(.*?)</content>", re.DOTALL)
+_GROUNDED_JSON_RE = re.compile(r"\*\*Grounded In\*\*:\s*```json\s*(\[.*?\])\s*```", re.DOTALL)
+
+
+def _unescape_xml(s: str) -> str:
+    # render_preamble's escape() only touches &, <, > (not "); mirror that.
+    return s.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
+
+
+def _extract_grounded(xml: str) -> list[dict]:
+    """Pull {urn, snapshot_hash} pairs out of the SAME rendered preamble text
+    the agent reads -- delapan's render_content (core/exploration/render.py)
+    puts a "**Grounded In**:\\n```json\\n[...]```" block in each finding's
+    content built by bridge.build_finding, and delapan's _render_finding
+    truncates that same content to 1200 chars before it reaches the agent.
+    Parsing it here rather than re-deriving it from an independent
+    match_findings query means this can never surface a URN the agent
+    couldn't also have seen itself -- but it inherits the same 1200-char
+    truncation exposure (a finding with a long conclusion + many grounded
+    entries can lose trailing entries here exactly as the agent would)."""
+    grounded: dict[str, dict] = {}
+    for content_match in _CONTENT_RE.finditer(xml):
+        content = _unescape_xml(content_match.group(1))
+        block_match = _GROUNDED_JSON_RE.search(content)
+        if not block_match:
+            continue
+        try:
+            entries = json.loads(block_match.group(1))
+        except json.JSONDecodeError:
+            continue  # truncated mid-JSON (budget cutoff) -- skip, don't crash recall
+        for entry in entries:
+            urn, snap = entry.get("urn"), entry.get("snapshot_hash")
+            if urn and snap:
+                grounded[urn] = {"urn": urn, "snapshot_hash": snap}
+    return list(grounded.values())
+
+
 def recall(project: str, kb: str, query: str) -> dict:
     ctx = resolve_tenant(project, kb, create=True)
     store = get_store()
     xml, coverage = asyncio.run(select_preamble(query, store=store, kb_id=ctx.kb_id))
-    return {"coverage": coverage, "preamble": xml}
+    return {"coverage": coverage, "preamble": xml, "grounded": _extract_grounded(xml)}
 
 
 def check_drift(content: dict, current: dict[str, str]) -> list[str]:
