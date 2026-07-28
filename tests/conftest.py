@@ -8,7 +8,8 @@ def local_delapan(tmp_path, monkeypatch):
     monkeypatch.setenv("DELAPAN_BACKEND", "local")
 
     async def fake_embed_batch(texts):
-        return [[hash(t) % 7 * 0.1 + 0.1] * 8 for t in texts]
+        # delapan's SQLite vec0 table is fixed at 1536 dims (core/store/sqlite.py).
+        return [[hash(t) % 7 * 0.1 + 0.1] * 1536 for t in texts]
 
     async def fake_embed_text(text):
         return (await fake_embed_batch([text]))[0]
