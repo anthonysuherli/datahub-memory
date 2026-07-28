@@ -1,0 +1,11 @@
+{
+  "question": "Can I trust monthly_revenue for the board report?",
+  "beat1_investigate": {
+    "description": "recall (gap) -> investigate via DataHub MCP -> memory_persist -> update_description + save_document",
+    "counters": {"turns": 10, "tool_calls": 9, "duration_s": 68.8}
+  },
+  "beat2_memory_answer": {
+    "description": "recall (sparse; single prior finding) -> answered from memory, no DataHub tool calls",
+    "counters": {"turns": 2, "tool_calls": 1, "duration_s": 17.0}
+  }
+}

@@ -1,6 +1,7 @@
 """One agent, two tool surfaces: DataHub MCP (stdio) + in-process memory tools."""
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import time
@@ -34,7 +35,11 @@ def route(coverage: str) -> str:
 @tool("memory_recall", "Tap the KB for prior grounded knowledge about a question",
       {"project": str, "kb": str, "query": str})
 async def memory_recall(args):
-    out = bridge.recall(args["project"], args["kb"], args["query"])
+    # bridge.recall is sync but spins its own asyncio.run() internally; called
+    # directly from this already-running (SDK) event loop that raises
+    # "asyncio.run() cannot be called from a running event loop". Dispatch to
+    # a thread so bridge's internal loop has a thread of its own to run in.
+    out = await asyncio.to_thread(bridge.recall, args["project"], args["kb"], args["query"])
     out["route"] = route(out["coverage"])
     return {"content": [{"type": "text", "text": json.dumps(out)}]}
 
@@ -52,7 +57,7 @@ async def memory_persist(args):
     ]
     f = bridge.build_finding(args["question"], args["conclusion"],
                               args["category"], grounded)
-    out = bridge.persist(args["project"], args["kb"], [f])
+    out = await asyncio.to_thread(bridge.persist, args["project"], args["kb"], [f])
     return {"content": [{"type": "text", "text": json.dumps(out)}]}
 
 
