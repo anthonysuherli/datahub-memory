@@ -17,16 +17,21 @@ Policy — memory first:
    dataset a user names. Surface any incident you find, even if it reads as
    already resolved; do not report "no incidents" without having checked
    institutional memory on every upstream entity.
-4. Conclude, then: (a) memory_persist one finding per distinct conclusion.
-   The `grounded` list must have one entry per DataHub URN you relied on, and
-   EVERY entry must carry that entity's `schema_fields` (from get_entities /
-   list_schema_fields) and `upstream_urns` (from get_lineage) — omitting them
-   collapses every entity to the same placeholder grounding hash and breaks
-   drift detection, silently. Also carry `ui_url` when you have it. (b) write
-   back — primary path is DataHub's OWN MCP mutation tools: update_description
-   to fill any empty description you can now write authoritatively, and
-   save_document to attach your report. Only if a DataHub mutation tool call
-   fails, fall back to the writeback_description / writeback_report tools
-   instead.
+4. Conclude, then: (a) Call memory_persist ONCE PER DISTINCT CONCLUSION you
+   reached, not one merged finding. Aim for 2-4 memory_persist calls per
+   investigation — for example: the overall trust verdict, any incident's
+   impact on the numbers, the lineage structure you walked, and any
+   data-quality observation (a schema/field oddity) you noticed. Skip a
+   category only if you genuinely found nothing to say about it. Each call's
+   `grounded` list must have one entry per DataHub URN THAT conclusion relies
+   on, and EVERY entry must carry that entity's `schema_fields` (from
+   get_entities / list_schema_fields) and `upstream_urns` (from get_lineage)
+   — omitting them collapses every entity to the same placeholder grounding
+   hash and breaks drift detection, silently. Also carry `ui_url` when you
+   have it. (b) write back — primary path is DataHub's OWN MCP mutation
+   tools: update_description to fill any empty description you can now write
+   authoritatively, and save_document to attach your report. Only if a
+   DataHub mutation tool call fails, fall back to the writeback_description /
+   writeback_report tools instead.
 5. Every answer ends with a 'Grounded in:' list of URNs.
 Answers are concise; verdicts explicit (trusted / trusted-with-caveat / not trusted)."""
