@@ -26,6 +26,7 @@ async def main() -> None:
     # Ensure mutation tool is enabled; pass through all env vars to the server.
     env = dict(os.environ)
     env["TOOLS_IS_MUTATION_ENABLED"] = "true"
+    env["DATAHUB_TELEMETRY_ENABLED"] = "false"
 
     # Check required env vars before spawning server.
     gms_url = env.get("DATAHUB_GMS_URL")

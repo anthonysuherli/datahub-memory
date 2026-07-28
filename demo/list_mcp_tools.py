@@ -24,6 +24,7 @@ from mcp.client.stdio import stdio_client
 
 async def main() -> None:
     env = dict(os.environ)
+    env["DATAHUB_TELEMETRY_ENABLED"] = "false"
     params = StdioServerParameters(command="uvx", args=["mcp-server-datahub"], env=env)
 
     async with stdio_client(params) as (read, write):
