@@ -71,9 +71,10 @@ system's literal description.
               save_document / update_description / glossary proposals   ← write-back
 ```
 
-- **Two MCP servers, one agent.** DataHub's `mcp-server-datahub` (v0.6.0, 22 tools:
-  10 read / 12 write) and delapan's MCP server run side by side; the agent loop is the
-  only new orchestration code.
+- **Two MCP servers, one agent.** DataHub's `mcp-server-datahub` (v0.6.0, empirically
+  20 tools with mutations on and a non-empty Document catalog: 8 read / 12 write —
+  see `docs/R1-decision.md`'s tool inventory) and delapan's MCP server run side by
+  side; the agent loop is the only new orchestration code.
 - **Memory bridge:** delapan project = DataHub instance; KB per domain. Every finding's
   `grounded_in` carries the DataHub URNs (+ a lightweight snapshot marker: schema/lineage
   hash at capture time) it was derived from.
