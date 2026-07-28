@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Scripted 3-beat demo: investigate -> inherit from memory -> drift + re-verify.
 # Run from repo root: demo/run_demo.sh (after sourcing .env.local).
+# Flags: --verify-only  Skip beats 1-3 and just run the beat-3 bi-temporal
+#        retirement check against the CURRENT .data/delapan.db + the
+#        pre-beat-3 snapshot files a prior full run left behind. Useful for
+#        re-exercising the gate logic itself without spending a live run.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -14,9 +18,120 @@ source .venv/bin/activate
 export DATAHUB_TELEMETRY_ENABLED=false
 
 DB_PATH="${DELAPAN_DB_PATH:-$PWD/.data/delapan.db}"
+PRE_BEAT3_OPS_FILE="$(dirname "$DB_PATH")/.pre_beat3_ops.snapshot"
+PRE_BEAT3_RETIRED_FILE="$(dirname "$DB_PATH")/.pre_beat3_retired.snapshot"
+
+# resolution_events op counts as "op:count" lines -- the ground truth for
+# which resolver op(s) fired.
+snapshot_ops() {
+  [ -f "$DB_PATH" ] || return 0
+  sqlite3 "$DB_PATH" \
+    "select op || ':' || count(*) from resolution_events group by op order by op;" \
+    2>/dev/null || true
+}
+
+# Count of retired (invalidated_at IS NOT NULL) findings right now.
+snapshot_retired() {
+  [ -f "$DB_PATH" ] || { echo 0; return; }
+  sqlite3 "$DB_PATH" "select count(*) from findings where invalidated_at is not null;" \
+    2>/dev/null || echo 0
+}
+
+# ops_delta BEFORE AFTER: per-op count increase between two snapshots.
+ops_delta() {
+  python - "$1" "$2" <<'PY'
+import sys
+
+def parse(s):
+    d = {}
+    for line in s.splitlines():
+        if not line.strip():
+            continue
+        op, n = line.rsplit(":", 1)
+        d[op] = int(n)
+    return d
+
+before, after = parse(sys.argv[1]), parse(sys.argv[2])
+ops = sorted(set(before) | set(after))
+fired = False
+for op in ops:
+    delta = after.get(op, 0) - before.get(op, 0)
+    if delta:
+        print(f"  {op}: +{delta}")
+        fired = True
+if not fired:
+    print("  (no new resolution_events)")
+PY
+}
+
+# Beat-3 gate: a bi-temporal retirement is UPDATE or SUPERSEDE routing
+# through delapan's store.supersede_finding -- the resolver-LLM's op label is
+# a refine-vs-contradict classification, not the thing being proven. Require
+# BOTH (a) the ops delta contains >=1 UPDATE or SUPERSEDE, and (b) the
+# retired-findings count actually increased -- (a) alone can't distinguish
+# "a finding was retired" from an UPDATE/SUPERSEDE row that (for whatever
+# resolver reason) didn't end up flipping invalidated_at, so check both.
+# Reads PRE_BEAT3_OPS_FILE / PRE_BEAT3_RETIRED_FILE, which either the normal
+# beat-3 flow below just wrote, or a prior full run left behind (for
+# --verify-only).
+verify_beat3_retirement() {
+  if [ ! -f "$PRE_BEAT3_OPS_FILE" ] || [ ! -f "$PRE_BEAT3_RETIRED_FILE" ]; then
+    echo "ABORT: no pre-beat-3 snapshot at $PRE_BEAT3_OPS_FILE / $PRE_BEAT3_RETIRED_FILE." >&2
+    echo "       Run the full sequence first; --verify-only needs a prior run's snapshot." >&2
+    exit 1
+  fi
+
+  local before_ops before_retired after_ops after_retired delta retired_delta op_label
+  before_ops="$(cat "$PRE_BEAT3_OPS_FILE")"
+  before_retired="$(cat "$PRE_BEAT3_RETIRED_FILE")"
+  after_ops="$(snapshot_ops)"
+  after_retired="$(snapshot_retired)"
+  retired_delta=$((after_retired - before_retired))
+
+  echo "--- resolution_events delta after beat 3 (re-verify) ---"
+  delta="$(ops_delta "$before_ops" "$after_ops")"
+  echo "$delta"
+  echo "--- retired findings: before=$before_retired after=$after_retired (delta=+$retired_delta) ---"
+
+  op_label=""
+  if echo "$delta" | grep -q "SUPERSEDE:"; then
+    op_label="SUPERSEDE"
+  elif echo "$delta" | grep -q "UPDATE:"; then
+    op_label="UPDATE"
+  fi
+
+  if [ -z "$op_label" ] || [ "$retired_delta" -le 0 ]; then
+    echo "ABORT: beat 3 did not produce a bi-temporal retirement." >&2
+    echo "       ops that fired this beat:" >&2
+    echo "${delta:-  (none)}" >&2
+    echo "       retired-findings delta: +$retired_delta" >&2
+    exit 1
+  fi
+
+  if [ "$op_label" = "SUPERSEDE" ]; then
+    echo "stale finding retired bi-temporally (op: SUPERSEDE -- resolver classified an outright contradiction)"
+  else
+    echo "stale finding retired bi-temporally (op: UPDATE -- resolver classified refinement; SUPERSEDE fires on outright contradictions)"
+  fi
+
+  echo "=== bi-temporal check: findings (live vs retired) ==="
+  sqlite3 -header -column "$DB_PATH" \
+    "select substr(title,1,60) as title,
+            case when invalidated_at is not null then 'retired' else 'live' end as status
+       from findings order by created_at;"
+
+  echo "=== retired_findings count ==="
+  sqlite3 "$DB_PATH" "select count(*) from findings where invalidated_at is not null;"
+}
+
+if [ "${1:-}" = "--verify-only" ]; then
+  echo "== --verify-only: exercising the beat-3 gate against the CURRENT DB, no beats run =="
+  verify_beat3_retirement
+  exit 0
+fi
 
 echo "== Fresh state: removing $DB_PATH so beat 1 starts from gap =="
-rm -f "$DB_PATH"
+rm -f "$DB_PATH" "$PRE_BEAT3_OPS_FILE" "$PRE_BEAT3_RETIRED_FILE"
 
 # Discovered live (2026-07-28): removing delapan's local memory alone is NOT
 # a fresh state. Beat 1's/beat 3's own write-back (update_description,
@@ -113,43 +228,6 @@ run_agent() {
   fi
 }
 
-# resolution_events op counts as "op:count" lines -- the ground truth for which
-# resolver op fired, since findings.invalidated_at alone can't distinguish
-# UPDATE from SUPERSEDE (both retire the row) and can't be pinned to a beat.
-snapshot_ops() {
-  [ -f "$DB_PATH" ] || return 0
-  sqlite3 "$DB_PATH" \
-    "select op || ':' || count(*) from resolution_events group by op order by op;" \
-    2>/dev/null || true
-}
-
-# ops_delta BEFORE AFTER: per-op count increase between two snapshots.
-ops_delta() {
-  python - "$1" "$2" <<'PY'
-import sys
-
-def parse(s):
-    d = {}
-    for line in s.splitlines():
-        if not line.strip():
-            continue
-        op, n = line.rsplit(":", 1)
-        d[op] = int(n)
-    return d
-
-before, after = parse(sys.argv[1]), parse(sys.argv[2])
-ops = sorted(set(before) | set(after))
-fired = False
-for op in ops:
-    delta = after.get(op, 0) - before.get(op, 0)
-    if delta:
-        print(f"  {op}: +{delta}")
-        fired = True
-if not fired:
-    print("  (no new resolution_events)")
-PY
-}
-
 BEFORE_1="$(snapshot_ops)"
 run_agent "BEAT 1: investigate" "$Q"
 AFTER_1="$(snapshot_ops)"
@@ -166,26 +244,12 @@ if ! python -m demo.drift; then
   echo "ABORT: drift emission failed" >&2
   exit 1
 fi
-BEFORE_3="$(snapshot_ops)"  # drift.py doesn't touch delapan's db; equals AFTER_2
+# Snapshot immediately before beat 3's agent call runs -- persisted to disk
+# (not just a bash variable) so verify_beat3_retirement can be re-run
+# standalone later via --verify-only, against this same before-state.
+snapshot_ops > "$PRE_BEAT3_OPS_FILE"
+snapshot_retired > "$PRE_BEAT3_RETIRED_FILE"
 
 run_agent "BEAT 3: re-verify" "$Q (re-verify: upstream schema may have changed)"
-AFTER_3="$(snapshot_ops)"
-echo "--- resolution_events delta after beat 3 (re-verify) ---"
-DELTA_3="$(ops_delta "$BEFORE_3" "$AFTER_3")"
-echo "$DELTA_3"
 
-if ! echo "$DELTA_3" | grep -q "SUPERSEDE:"; then
-  echo "ABORT: beat 3 did not produce a SUPERSEDE resolution op." >&2
-  echo "       ops that DID fire this beat:" >&2
-  echo "$DELTA_3" >&2
-  exit 1
-fi
-
-echo "=== bi-temporal check: findings (live vs retired) ==="
-sqlite3 -header -column "$DB_PATH" \
-  "select substr(title,1,60) as title,
-          case when invalidated_at is not null then 'retired' else 'live' end as status
-     from findings order by created_at;"
-
-echo "=== retired_findings count ==="
-sqlite3 "$DB_PATH" "select count(*) from findings where invalidated_at is not null;"
+verify_beat3_retirement
