@@ -17,7 +17,7 @@ def test_fill_description_preserves_name(mock_em, mock_graph):
     mock_em.return_value = em
     graph = MagicMock()
     graph.get_aspect.return_value = DatasetPropertiesClass(
-        name="stg_payments", description=""
+        name="stg_payments", description="", customProperties={"owner_team": "payments"}
     )
     mock_graph.return_value = graph
 
@@ -27,6 +27,7 @@ def test_fill_description_preserves_name(mock_em, mock_graph):
     aspect = em.emit.call_args[0][0].aspect
     assert aspect.description == "Staged payments, USD-normalized."
     assert aspect.name == "stg_payments"  # read-modify-write must not clobber name
+    assert aspect.customProperties == {"owner_team": "payments"}  # nor customProperties
 
 
 @patch("datahub_memory.writeback._graph")
@@ -87,3 +88,31 @@ def test_write_report_handles_missing_aspect(mock_em, mock_graph):
     aspect = em.emit.call_args[0][0].aspect
     assert len(aspect.elements) == 1
     assert "Trust check" in aspect.elements[-1].description
+
+
+@patch("datahub_memory.writeback._graph")
+def test_fill_description_degrades_on_connection_error(mock_graph):
+    mock_graph.side_effect = ConnectionError("GMS unreachable")
+
+    out = writeback.fill_description("urn:li:dataset:x", "Staged payments, USD-normalized.")
+
+    assert out == {
+        "ok": False,
+        "transport": "emitter",
+        "detail": "ConnectionError: GMS unreachable",
+    }
+
+
+@patch("datahub_memory.writeback._graph")
+def test_write_report_degrades_on_connection_error(mock_graph):
+    mock_graph.side_effect = ConnectionError("GMS unreachable")
+
+    out = writeback.write_report(
+        "urn:li:dataset:x", "Trust check: monthly_revenue", "## Verdict\nTrusted with caveat."
+    )
+
+    assert out == {
+        "ok": False,
+        "transport": "emitter",
+        "detail": "ConnectionError: GMS unreachable",
+    }

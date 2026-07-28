@@ -14,6 +14,11 @@ DataHubGraph.get_aspect before emitting, to avoid clobbering fields/elements set
 by other writers (verified live against fct_revenue: emitting
 DatasetPropertiesClass(description=...) without `name` set the dataset's `name`
 field to None).
+
+Both functions degrade instead of raising: any exception (e.g. GMS unreachable)
+is caught and returned as {"ok": False, "transport": "emitter", "detail": ...}
+so a caller (the Task-6 agent loop) never crashes on a write-back failure — it
+reads `detail` for what went wrong. No retry, no logging framework.
 """
 from __future__ import annotations
 
@@ -44,21 +49,27 @@ def _graph() -> DataHubGraph:
 
 
 def fill_description(urn: str, description: str) -> dict:
-    current = _graph().get_aspect(urn, DatasetPropertiesClass)
-    props = current if current is not None else DatasetPropertiesClass()
-    props.description = description
-    _emitter().emit(MetadataChangeProposalWrapper(entityUrn=urn, aspect=props))
-    return {"ok": True, "transport": "emitter", "detail": f"description set on {urn}"}
+    try:
+        current = _graph().get_aspect(urn, DatasetPropertiesClass)
+        props = current if current is not None else DatasetPropertiesClass()
+        props.description = description
+        _emitter().emit(MetadataChangeProposalWrapper(entityUrn=urn, aspect=props))
+        return {"ok": True, "transport": "emitter", "detail": f"description set on {urn}"}
+    except Exception as exc:  # noqa: BLE001 — degrade, don't crash the Task-6 agent loop
+        return {"ok": False, "transport": "emitter", "detail": f"{type(exc).__name__}: {exc}"}
 
 
 def write_report(urn: str, title: str, markdown: str) -> dict:
-    stamp = AuditStampClass(time=int(time.time() * 1000),
-                            actor="urn:li:corpuser:datahub-memory")
-    new_element = InstitutionalMemoryMetadataClass(
-        url="https://github.com/anthonysuherli/datahub-memory#report",
-        description=f"{title} — {markdown[:900]}", createStamp=stamp)
-    current = _graph().get_aspect(urn, InstitutionalMemoryClass)
-    existing = list(current.elements) if current is not None else []
-    _emitter().emit(MetadataChangeProposalWrapper(
-        entityUrn=urn, aspect=InstitutionalMemoryClass(elements=existing + [new_element])))
-    return {"ok": True, "transport": "emitter", "detail": f"report attached to {urn}"}
+    try:
+        stamp = AuditStampClass(time=int(time.time() * 1000),
+                                actor="urn:li:corpuser:datahub-memory")
+        new_element = InstitutionalMemoryMetadataClass(
+            url="https://github.com/anthonysuherli/datahub-memory#report",
+            description=f"{title} — {markdown[:900]}", createStamp=stamp)
+        current = _graph().get_aspect(urn, InstitutionalMemoryClass)
+        existing = list(current.elements) if current is not None else []
+        _emitter().emit(MetadataChangeProposalWrapper(
+            entityUrn=urn, aspect=InstitutionalMemoryClass(elements=existing + [new_element])))
+        return {"ok": True, "transport": "emitter", "detail": f"report attached to {urn}"}
+    except Exception as exc:  # noqa: BLE001 — degrade, don't crash the Task-6 agent loop
+        return {"ok": False, "transport": "emitter", "detail": f"{type(exc).__name__}: {exc}"}
