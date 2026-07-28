@@ -107,7 +107,7 @@ No DataHub Cloud license, no warehouse, no external data source — the whole de
 The same agent ships as a Claude Code plugin (`.claude-plugin/`, `mcp.json`, `skills/`) alongside the CLI:
 
 ```bash
-claude plugin marketplace add /path/to/datahub-memory
+claude plugin marketplace add /path/to/dh8
 claude plugin install datahub-memory@datahub-memory
 ```
 
