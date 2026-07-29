@@ -10,7 +10,7 @@ Grounded institutional memory for data teams: DataHub agent with delapan write-t
 
 datahub-memory is a DataHub investigation agent with grounded, self-correcting memory. It reads DataHub entirely through `mcp-server-datahub`'s own tools — search, lineage, schema, and document reads — and writes what it learns back through DataHub's own mutation tools (`update_description`, `save_document`), so the catalog itself inherits the answer, not just the agent's private memory. Every conclusion is persisted as a delapan finding `grounded_in` the exact DataHub URNs it was derived from, and deterministically re-verified — by re-hashing those entities' current schema and lineage, never by guessing — the moment the world underneath it changes.
 
-Measured live against a docker-quickstart DataHub v1.5.0.6 + `mcp-server-datahub` v0.6.0 (`demo/counters-baseline.json`): investigating a trust question the first time costs 16 tool calls and 127s; asking the identical question again in a fresh session answers from memory in 1 tool call and 21s. The same investigate → trace → persist → write-back pattern is also contributed upstream as a DataHub multi-agent skill ([datahub-project/datahub-skills#62](https://github.com/datahub-project/datahub-skills/pull/62)).
+Measured live against a docker-quickstart DataHub v1.5.0.6 + `mcp-server-datahub` v0.6.0 (`demo/counters-baseline.json`): investigating a trust question the first time costs 16 tool calls and 127s; asking the identical question again in a fresh session answers from memory in 1 tool call and 21s. The same pattern is contributed upstream as two DataHub multi-agent skills: [datahub-project/datahub-skills#62](https://github.com/datahub-project/datahub-skills/pull/62) (`datahub-investigate` — the deep-dive) and [#69](https://github.com/datahub-project/datahub-skills/pull/69) (`datahub-memory` — recall-first with documents as the catalog-native memory store).
 
 ## Pre-existing code disclosure
 
@@ -132,6 +132,8 @@ Requires `uv` on the host (the launcher prints the install command and exits if 
 ## Upstream contribution
 
 [`datahub-project/datahub-skills#62`](https://github.com/datahub-project/datahub-skills/pull/62) — a `grounded-investigation` skill (frontmatter title: "feat: add datahub-investigate skill") contributed to DataHub's own multi-agent skills repo, generalizing this submission's investigate → trace → persist → write-back pattern for any agent working against DataHub (Claude Code, Cursor, Codex, Copilot, Gemini CLI, Windsurf).
+
+[`datahub-project/datahub-skills#69`](https://github.com/datahub-project/datahub-skills/pull/69) — a `datahub-memory` skill: the recall-first workflow with DataHub documents as the catalog-native memory store (search prior reports → investigate only the gap → persist via `save_document` → supersede stale reports, never delete). Independent of #62; designed to compose with it.
 
 ## Design notes
 
