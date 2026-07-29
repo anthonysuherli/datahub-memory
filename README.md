@@ -2,6 +2,16 @@
 
 Grounded institutional memory for data teams: DataHub agent with delapan write-time-resolved memory.
 
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+![Tests](https://img.shields.io/badge/tests-21%20passing%20(local)-brightgreen.svg)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)
+
+![Beat 1 costs 16 tool calls and 127s; the identical question in a fresh session answers from memory in 1 tool call and 21s](docs/assets/hero.gif)
+
+datahub-memory is a DataHub investigation agent with grounded, self-correcting memory. It reads DataHub entirely through `mcp-server-datahub`'s own tools — search, lineage, schema, and document reads — and writes what it learns back through DataHub's own mutation tools (`update_description`, `save_document`), so the catalog itself inherits the answer, not just the agent's private memory. Every conclusion is persisted as a delapan finding `grounded_in` the exact DataHub URNs it was derived from, and deterministically re-verified — by re-hashing those entities' current schema and lineage, never by guessing — the moment the world underneath it changes.
+
+Measured live against a docker-quickstart DataHub v1.5.0.6 + `mcp-server-datahub` v0.6.0 (`demo/counters-baseline.json`): investigating a trust question the first time costs 16 tool calls and 127s; asking the identical question again in a fresh session answers from memory in 1 tool call and 21s. The same investigate → trace → persist → write-back pattern is also contributed upstream as a DataHub multi-agent skill ([datahub-project/datahub-skills#62](https://github.com/datahub-project/datahub-skills/pull/62)).
+
 ## Pre-existing code disclosure
 
 This project depends on [delapan](https://github.com/anthonysuherli/delapan) (AGPL-3.0), an open-source engine written and owned by the entrant. All code in this repository is new work created during the submission period and is licensed Apache-2.0. Because the entrant is delapan's sole copyright holder, its use here is at the entrant's own grant; no third-party license obligations are created by this combination.
@@ -20,7 +30,7 @@ Three beats, one question ("Can I trust `monthly_revenue` for the board report?"
 | 2 — inherit (same question, fresh session) | 2 | 1 | 20.9s | Instant answer from memory: one `memory_recall` call, zero DataHub tool calls, cites beat 1's finding ids and URNs directly. ~8x fewer turns, 16x fewer tool calls, ~6x faster than beat 1. |
 | 3 — drift → re-verify | 11 | 10 | 98.4s | `demo/drift.py` renames `stg_payments.amount_usd` → `amount`. Re-asking the same question (worded to signal possible staleness) routes to memory first, but the deterministic `check_freshness` tool re-hashes the grounded entities against DataHub's *current* state, flags `stg_payments` as changed, and forces a targeted re-investigation. Resolver: `ADD` (new schema-drift finding) + `UPDATE` (retires the stale beat-1 trust-verdict finding, `75a5ab8b` → `aabef4d1`). |
 
-The retirement in beat 3 is bi-temporal — the stale finding's `invalidated_at` is set, nothing is deleted, and `resolution_events` keeps a permanent record of why. The resolver classified this particular retirement as `UPDATE` rather than `SUPERSEDE`; both route through the same `store.supersede_finding` code path, so the op label is the resolver's refine-vs-contradict judgment call, not a different mechanism — the bi-temporal retirement is the point being demonstrated, not the label. See `docs/sample-outputs.md` for the real finding content and resolution-event rows behind this table.
+The retirement in beat 3 is bi-temporal — the stale finding's `invalidated_at` is set, nothing is deleted, and `resolution_events` keeps a permanent record of why. The resolver classified this particular retirement as `UPDATE` rather than `SUPERSEDE`; both route through the same `store.supersede_finding` code path, so the op label is the resolver's refine-vs-contradict judgment call, not a different mechanism — the bi-temporal retirement is the point being demonstrated, not the label. See [`examples/`](examples/README.md) for the real finding content and resolution-event rows behind this table.
 
 ## Quickstart for judges
 
@@ -107,7 +117,7 @@ No DataHub Cloud license, no warehouse, no external data source — the whole de
 The same agent ships as a Claude Code plugin (`.claude-plugin/`, `mcp.json`, `skills/`) alongside the CLI:
 
 ```bash
-claude plugin marketplace add /path/to/dh8
+claude plugin marketplace add /path/to/datahub-memory
 claude plugin install datahub-memory@datahub-memory
 ```
 

@@ -470,7 +470,7 @@ def write_report(urn: str, title: str, markdown: str) -> dict:
     stamp = AuditStampClass(time=int(time.time() * 1000),
                             actor="urn:li:corpuser:datahub-memory")
     element = InstitutionalMemoryMetadataClass(
-        url=f"https://github.com/anthonysuherli/dh8#report",
+        url=f"https://github.com/anthonysuherli/datahub-memory#report",
         description=f"{title} — {markdown[:900]}", createStamp=stamp)
     _emitter().emit(MetadataChangeProposalWrapper(
         entityUrn=urn, aspect=InstitutionalMemoryClass(elements=[element])))
@@ -679,7 +679,7 @@ python -m datahub_memory "$Q (re-verify: upstream schema may have changed)"
 
 **Interfaces:**
 - Consumes: the delapan plugin as the reference layout (`delapan-ai/backend/.claude-plugin/`, `mcp.json`, `skills/` — copy the structure, not the content) and the 2026-07-26 plugin release-interface spec.
-- Produces: installable plugin — `claude plugin marketplace add anthonysuherli/dh8 && claude plugin install datahub-memory@datahub-memory`, exposing `/datahub-memory:investigate|recall|writeback`.
+- Produces: installable plugin — `claude plugin marketplace add anthonysuherli/datahub-memory && claude plugin install datahub-memory@datahub-memory`, exposing `/datahub-memory:investigate|recall|writeback`.
 
 - [ ] **Step 1:** Copy the layout of delapan's plugin shell; `mcp.json` starts BOTH servers (memory via `python -m datahub_memory.mcp_stub` — a 10-line stdio wrapper around `MEMORY_SERVER`; datahub via uvx). Each SKILL.md: trigger description + the workflow section of `prompts.SYSTEM` split per command.
 - [ ] **Step 2:** Install locally, run `/datahub-memory:investigate` in a scratch Claude Code session against the quickstart; verify same behavior as CLI.

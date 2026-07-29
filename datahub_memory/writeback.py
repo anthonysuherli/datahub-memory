@@ -64,7 +64,7 @@ def write_report(urn: str, title: str, markdown: str) -> dict:
         stamp = AuditStampClass(time=int(time.time() * 1000),
                                 actor="urn:li:corpuser:datahub-memory")
         new_element = InstitutionalMemoryMetadataClass(
-            url="https://github.com/anthonysuherli/dh8#report",
+            url="https://github.com/anthonysuherli/datahub-memory#report",
             description=f"{title} — {markdown[:900]}", createStamp=stamp)
         current = _graph().get_aspect(urn, InstitutionalMemoryClass)
         existing = list(current.elements) if current is not None else []
