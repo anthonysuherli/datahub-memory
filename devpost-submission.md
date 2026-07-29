@@ -85,18 +85,22 @@ Both must be present in the environment before `demo/run_demo.sh` (or `python -m
 
 ---
 
-## Video script (<3 min, beat-by-beat shot list)
+## Video (final cut — 2:46, caption-driven)
 
-Recorded from `demo/run_demo.sh`'s real terminal output (`terminal-demo-video` skill) intercut with the DataHub UI. Total budget: ~2:50.
+Composed agentically: the real `demo/run_demo.sh` terminal recording (re-rendered
+from the asciinema cast, no idle-capping) + live DataHub UI captures, assembled as
+a Remotion composition — kinetic captions (the video is fully legible sound-off),
+Ken Burns on UI stills, an animated 16→1 tool-call comparison, and an end card.
+Silent by design; narration below doubles as a voice-over script if dubbed later.
 
-| Time | Shot | Narration |
-|---|---|---|
-| 0:00–0:12 | Title card: "datahub-memory — grounded institutional memory for data teams." Cut to DataHub UI, `stg_payments` dataset page, **Documentation** tab showing an **empty description**. | "Every data team re-investigates the same questions. Here's a dataset with no description at all — and no memory of what anyone's already learned about it." |
-| 0:12–0:40 | Terminal: `demo/run_demo.sh` starts. Show `=== BEAT 1: investigate ===` scrolling, then the final printed answer + counters line (`{"turns": 17, "tool_calls": 16, "duration_s": 127.2}`). | "We ask: can I trust `monthly_revenue` for the board report? The agent has no memory yet, so it does the real work — walks DataHub's lineage, reads institutional memory on every upstream entity, and finds a resolved incident four hops back. Sixteen tool calls, about two minutes." |
-| 0:40–0:58 | Cut to DataHub UI: `stg_payments` **Documentation** tab now **filled** (post-write-back). Then the DataHub Documents view showing the agent's saved investigation report. | "And it doesn't just answer — it writes back. The description gets filled in directly on the dataset, and the full investigation is saved as a document attached to the entity, so the next person who opens this page inherits the answer." |
-| 0:58–1:10 | DataHub UI: open the seeded incident document ("INCIDENT 2026-07-24: Stripe webhook outage — late backfill"). | "The incident itself — a six-hour Stripe webhook outage — was already recorded in DataHub as a document. The agent found it by searching, the same way any teammate would." |
-| 1:10–1:35 | Terminal: `=== BEAT 2: inherit ===`, same question, fresh session. Show the near-instant output and counters (`{"turns": 2, "tool_calls": 1, "duration_s": 20.9}`). Split-screen or side-by-side counters: 16 calls/127s vs. 1 call/21s. | "Now we ask the exact same question, in a brand-new session. One tool call — a memory lookup, nothing else — and it answers in twenty-one seconds, citing the same finding and the same URNs. No re-investigation needed." |
-| 1:35–1:50 | Terminal: `python -m demo.drift` output (`drift emitted`). Cut to DataHub UI: `stg_payments` schema tab, field `amount_usd` → `amount`. | "Now the upstream schema actually changes — a field gets renamed. Nothing tells the agent this happened. Its memory still thinks the old schema is current." |
-| 1:50–2:25 | Terminal: `=== BEAT 3: re-verify ===`, worded to signal possible staleness. Show the `check_freshness` reasoning surface in the answer text ("Schema drift detected in `stg_payments`...") and the final counters (`{"turns": 11, "tool_calls": 10, "duration_s": 98.4}`). | "We ask again, this time flagging that things might have changed. The agent doesn't guess — it deterministically re-hashes every entity it's grounded in against DataHub's current state, and it correctly flags `stg_payments`, the one that actually moved. That triggers a real re-investigation." |
-| 2:25–2:45 | Terminal: the `resolution_events` delta printout (`ADD: +2`, `UPDATE: +1`) and the live-vs-retired findings table from the runner's output. | "The result: a new finding documents the drift, and the old trust verdict is retired — not deleted, just marked stale, with a permanent record of why. This is bi-temporal memory: nothing disappears, but the agent, and anyone downstream of it, never acts on stale information again." |
-| 2:45–2:50 | End card: the three-beat counters table + "Claude Code plugin: `/datahub-memory:*`" + PR link (`datahub-project/datahub-skills#62`). | "datahub-memory: investigate once, inherit forever, and know the moment it's wrong." |
+| Scene | Time | Screen | Caption / story job |
+|---|---|---|---|
+| S1 | 0:00 | Black + kinetic hook | "Someone already answered this." / "You just don't know it." |
+| S2 | 0:05 | stg_payments, empty description (Ken Burns) | A dataset feeding the board's revenue number — no record of what anyone learned |
+| S3 | 0:12 | Beat-1 terminal (sped), hold on verdict | No memory yet: lineage → schemas → documents → incident four hops upstream. 16 tool calls · 127 s · cited verdict |
+| S4 | 0:48 | Stills: description filled → report doc → incident doc | The knowledge now lives where the next person will look |
+| S5 | 1:08 | Beat-2 terminal + animated 16→1 / 127s→21s comparison | Same question, new session, answered from memory — numbers read from the database, not the transcript |
+| S6 | 1:32 | Drifted schema still | "Memory that never updates is just amnesia with better branding" |
+| S7 | 1:42 | Beat-3 terminal, hold on retirement line | Re-hashes every grounded entity, flags exactly the table that moved, retires the stale verdict bi-temporally |
+| S8 | 2:14 | `--verify-only` gate output | The gate reads resolution events straight from SQLite — every number traces to this run |
+| S9 | 2:26 | End card | investigate once · inherit forever · know the moment it's wrong + plugin + repo + PR #62 |
