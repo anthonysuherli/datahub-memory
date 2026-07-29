@@ -697,7 +697,7 @@ dev = [
 requires-dist = [
     { name = "acryl-datahub" },
     { name = "claude-agent-sdk" },
-    { name = "delapan", extras = ["local"], git = "https://github.com/anthonysuherli/delapan-be?rev=b1b5b44" },
+    { name = "delapan", extras = ["local"], git = "https://github.com/anthonysuherli/delapan?rev=a4b2270" },
     { name = "pytest", marker = "extra == 'dev'" },
     { name = "pytest-asyncio", marker = "extra == 'dev'" },
     { name = "ruff", marker = "extra == 'dev'" },
@@ -707,7 +707,7 @@ provides-extras = ["dev"]
 [[package]]
 name = "delapan"
 version = "0.2.0"
-source = { git = "https://github.com/anthonysuherli/delapan-be?rev=b1b5b44#b1b5b44e0d84b0ab2abe5910a95c6e4b32c12445" }
+source = { git = "https://github.com/anthonysuherli/delapan?rev=a4b2270#a4b2270d6f5bd215da5fb13191d1248f0b0b625e" }
 dependencies = [
     { name = "anthropic" },
     { name = "fastapi" },

@@ -9,7 +9,7 @@ description = "Grounded institutional memory for data teams: DataHub agent with 
 requires-python = ">=3.11"
 license = "Apache-2.0"
 dependencies = [
-    "delapan[local] @ git+https://github.com/anthonysuherli/delapan-be@b1b5b44",
+    "delapan[local] @ git+https://github.com/anthonysuherli/delapan@a4b2270",
     "claude-agent-sdk",
     "acryl-datahub",
 ]
