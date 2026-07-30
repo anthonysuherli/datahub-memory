@@ -100,22 +100,34 @@ Both must be present in the environment before `demo/run_demo.sh` (or `python -m
 
 ---
 
-## Video (final cut — 2:46, caption-driven)
+## Video (final cut — 2:31, split-screen, caption-driven)
 
-Composed agentically: the real `demo/run_demo.sh` terminal recording (re-rendered
-from the asciinema cast, no idle-capping) + live DataHub UI captures, assembled as
-a Remotion composition — kinetic captions (the video is fully legible sound-off),
-Ken Burns on UI stills, an animated 16→1 tool-call comparison, and an end card.
-Silent by design; narration below doubles as a voice-over script if dubbed later.
+Composed agentically as a Remotion composition, and **split-screen throughout the
+two agent beats**: on the left the *real interactive Claude Code TUI* (hosted in
+tmux, captured with `asciinema` and rendered with `agg`, so the `/datahub-memory:`
+autocomplete popup and every `Called plugin:…` / `Skill(…)` block is Claude Code's
+own rendering, not a reconstruction); on the right the live DataHub page, recorded
+by a Playwright browser reloading every ~3s so server-side changes become visible
+as they land. Both panes were recorded in the **same wall-clock window** and are
+composited against a measured offset (`split3/sync.json`), so cause and effect on
+screen are genuine rather than edited together.
+
+Footage is speed-ramped to keep the runtime under 3 minutes, with **1× real-time
+brackets held over the causal moments** — the write-back landing in Beat A, and
+`check_freshness` plus the correction landing in Beat B. Silent by design and fully
+legible sound-off; the captions below double as a voice-over script if dubbed later.
 
 | Scene | Time | Screen | Caption / story job |
 |---|---|---|---|
-| S1 | 0:00 | Black + kinetic hook | "Someone already answered this." / "You just don't know it." |
-| S2 | 0:05 | stg_payments, empty description (Ken Burns) | A dataset feeding the board's revenue number — no record of what anyone learned |
-| S3 | 0:12 | Beat-1 terminal (sped), hold on verdict | No memory yet: lineage → schemas → documents → incident four hops upstream. 16 tool calls · 127 s · cited verdict |
-| S4 | 0:48 | Stills: description filled → report doc → incident doc | The knowledge now lives where the next person will look |
-| S5 | 1:08 | Beat-2 terminal + animated 16→1 / 127s→21s comparison | Same question, new session, answered from memory — numbers read from the database, not the transcript |
-| S6 | 1:32 | Drifted schema still | "Memory that never updates is just amnesia with better branding" |
-| S7 | 1:42 | Beat-3 terminal, hold on retirement line | Re-hashes every grounded entity, flags exactly the table that moved, retires the stale verdict bi-temporally |
-| S8 | 2:14 | `--verify-only` gate output | The gate reads resolution events straight from SQLite — every number traces to this run |
-| S9 | 2:26 | End card | investigate once · inherit forever · know the moment it's wrong + plugin + repo + PR #62 |
+| S1 | 0:00 | Black + kinetic hook | "Someone already answered this." / "You just don't know it." → "a Claude Code plugin that remembers what your data team already learned" |
+| Autocomplete | 0:08 | Real TUI, `/datahub-memory:` popup building up | This ships as a Claude Code plugin — the commands are real |
+| Beat A | 0:12 | **Split:** TUI investigating ‖ `stg_payments` Documentation tab | No memory yet: lineage → schemas → documents → the incident four hops upstream |
+| ↳ | 0:46 | caption in, pane still reads "No documentation yet" | "It **writes the answer back** — watch the description appear" |
+| ↳ | 0:50 | **1× real time:** `Skill(datahub-memory:writeback)` on the left, the description appearing on the right | The catalog itself inherits the answer — cause and effect in one wall-clock window |
+| Inherit | 0:58 | Beat-2 terminal + animated 16→1 / 127s→21s counter | Same question, new session, answered from memory — numbers read from the database, not the transcript |
+| Drift still | 1:12 | Drifted schema still | "Upstream, a column was renamed" (applied before recording — see the honesty note) |
+| Beat B | 1:15 | **Split:** TUI re-verifying ‖ same Documentation tab | **1×:** the staleness signal routes to `check_freshness`, which re-hashes every grounded entity and reports "Drift confirmed: `stg_payments` has changed" |
+| ↳ | 1:24 | | "Memory that never updates is just amnesia with better branding" |
+| ↳ | 2:00 | **1×:** corrected description lands in DataHub | "⚠️ Column renamed, units now unasserted (detected 2026-07-29)" — the stale answer corrected, nothing deleted, everything dated |
+| Gate | 2:05 | `--verify-only` gate output | The gate reads resolution events straight from SQLite — every number traces to this run |
+| End card | 2:13 | End card | investigate once · inherit forever · know the moment it's wrong + plugin + repo + PRs #62 and #69 |

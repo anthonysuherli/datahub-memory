@@ -3,7 +3,7 @@
 Grounded institutional memory for data teams: DataHub agent with delapan write-time-resolved memory.
 
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-![Tests](https://img.shields.io/badge/tests-21%20passing%20(local)-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-23%20passing%20(local)-brightgreen.svg)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)
 
 ![Beat 1 costs 16 tool calls and 127s; the identical question in a fresh session answers from memory in 1 tool call and 21s](docs/assets/hero.gif)
