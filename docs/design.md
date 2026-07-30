@@ -77,7 +77,9 @@ system's literal description.
   side; the agent loop is the only new orchestration code.
 - **Memory bridge:** delapan project = DataHub instance; KB per domain. Every finding's
   `grounded_in` carries the DataHub URNs (+ a lightweight snapshot marker: schema/lineage
-  hash at capture time) it was derived from.
+  hash at capture time) it was derived from. `bridge.recall` reads `grounded_in` from
+  each finding's full stored row rather than delapan's 1200-char-truncated preamble
+  copy, so long conclusions with several grounded entries can't lose trailing URNs.
 - **Preamble-first recall:** every question first calls `delapan_resume(query)`.
   `rich` → answer from memory citing prior investigations + URNs, zero warehouse work.
   `sparse`/`gap` → full investigation, then persist + write back.

@@ -30,6 +30,72 @@ def test_persist_then_recall_roundtrip(local_delapan):
     assert "<preamble>" in got["preamble"]
 
 
+def test_recall_grounded_survives_preamble_truncation(local_delapan):
+    """delapan's _render_finding truncates each finding's rendered content to
+    1200 chars before it reaches the agent. A finding with a long conclusion
+    and several grounded entries can have its entire "**Grounded In**" JSON
+    block land past that cutoff -- recall() must still surface every grounded
+    urn by re-fetching the finding's full row from the store rather than
+    parsing only the truncated copy in the preamble."""
+    from delapan.core.exploration.render import render_content
+
+    grounded_in = [
+        {"urn": f"urn:li:dataset:(urn:li:dataPlatform:snowflake,db.schema.t{i},PROD)",
+         "snapshot_hash": f"hash{i:04d}", "ui_url": f"http://u/{i}"}
+        for i in range(4)
+    ]
+    long_conclusion = "Yes. " + ("Backfill incident details padding text. " * 30)
+    f = bridge.build_finding(
+        "can I trust monthly_revenue?", long_conclusion, "Investigation", grounded_in)
+
+    # Sanity: this fixture actually exercises the bug -- the rendered content
+    # is long enough that delapan's 1200-char per-finding truncation drops the
+    # entire grounded_in JSON block, not just part of it.
+    rendered = render_content(f.content)
+    assert len(rendered) > 1200
+    assert "Grounded In" not in rendered[:1200]
+
+    bridge.persist("dh-demo", "truncation", [f])
+    got = bridge.recall("dh-demo", "truncation", "monthly_revenue trust")
+    assert {g["urn"] for g in got["grounded"]} == {g["urn"] for g in grounded_in}
+
+
+class _FakeStore:
+    """Minimal store double exposing only what _extract_grounded needs."""
+
+    def __init__(self, rows: dict):
+        self._rows = rows
+
+    def get_finding(self, kb_id, finding_id):
+        try:
+            return self._rows[finding_id]
+        except KeyError:
+            raise RuntimeError("finding not found")
+
+
+def test_extract_grounded_never_surfaces_a_finding_outside_the_preamble():
+    """Honesty property: a urn belonging to a finding the store knows about but
+    that never appears in the rendered preamble xml must never be returned --
+    _extract_grounded must only resolve ids it actually saw in the preamble,
+    even though re-fetching full rows means it could technically reach any id."""
+    shown_content = ('**Grounded In**:\n```json\n'
+                      '[{"urn": "urn:li:dataset:shown", "snapshot_hash": "h1"}]\n```')
+    hidden_content = ('**Grounded In**:\n```json\n'
+                       '[{"urn": "urn:li:dataset:hidden", "snapshot_hash": "h2"}]\n```')
+    xml = (
+        "<preamble>\n  <findings>\n"
+        '    <finding id="shown-id" category="Investigation">\n'
+        f"      <title>t</title>\n      <content>{shown_content}</content>\n"
+        "    </finding>\n  </findings>\n</preamble>"
+    )
+    store = _FakeStore({
+        "shown-id": {"content": shown_content},
+        "hidden-id": {"content": hidden_content},
+    })
+    grounded = bridge._extract_grounded(xml, kb_id="kb1", store=store)
+    assert {g["urn"] for g in grounded} == {"urn:li:dataset:shown"}
+
+
 def test_check_drift_flags_changed_hash():
     content = {"grounded_in": [{"urn": "u1", "snapshot_hash": "old"},
                                {"urn": "u2", "snapshot_hash": "same"}]}

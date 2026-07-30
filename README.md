@@ -105,7 +105,10 @@ No DataHub Cloud license, no warehouse, no external data source — the whole de
   *current* schema fields and lineage and diffs it against the hash stored on the
   finding — no model judgment, no guessing which entity might have changed. A mismatch
   forces a targeted re-investigation and a new `memory_persist`, which the resolver
-  reconciles against the stale finding (bi-temporal retirement — see above).
+  reconciles against the stale finding (bi-temporal retirement — see above). Grounded
+  URNs are read from each finding's full stored row, not delapan's 1200-char-truncated
+  preamble copy, so a finding with a long conclusion and several grounded entries can't
+  silently lose entries `check_freshness` should have re-hashed.
 - **Write-back loop**: DataHub's own MCP mutation tools are primary —
   `update_description` fills empty/stale descriptions, `save_document` attaches the
   investigation report. The emitter/GraphQL path in `datahub_memory/writeback.py` is
