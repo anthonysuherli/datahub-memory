@@ -102,6 +102,8 @@ Both must be present in the environment before `demo/run_demo.sh` (or `python -m
 
 ## Video (final cut — 2:31, split-screen, caption-driven)
 
+**https://youtu.be/d-R0-WuPzXw**
+
 Composed agentically as a Remotion composition, and **split-screen throughout the
 two agent beats**: on the left the *real interactive Claude Code TUI* (hosted in
 tmux, captured with `asciinema` and rendered with `agg`, so the `/datahub-memory:`

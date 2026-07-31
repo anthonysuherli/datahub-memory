@@ -6,7 +6,9 @@ Grounded institutional memory for data teams: DataHub agent with delapan write-t
 ![Tests](https://img.shields.io/badge/tests-23%20passing%20(local)-brightgreen.svg)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)
 
-![Beat 1 costs 16 tool calls and 127s; the identical question in a fresh session answers from memory in 1 tool call and 21s](docs/assets/hero.gif)
+[![Beat 1 costs 16 tool calls and 127s; the identical question in a fresh session answers from memory in 1 tool call and 21s](docs/assets/hero.gif)](https://youtu.be/d-R0-WuPzXw)
+
+**▶ [Watch the 2:31 demo](https://youtu.be/d-R0-WuPzXw)** — split-screen, the real Claude Code TUI on the left and the live DataHub page on the right, both recorded in the same wall-clock window: the write-back landing in the catalog at 0:50, the same question answered from memory at 0:58, and a schema drift caught and corrected at 2:00.
 
 datahub-memory is a DataHub investigation agent with grounded, self-correcting memory. It reads DataHub entirely through `mcp-server-datahub`'s own tools — search, lineage, schema, and document reads — and writes what it learns back through DataHub's own mutation tools (`update_description`, `save_document`), so the catalog itself inherits the answer, not just the agent's private memory. Every conclusion is persisted as a delapan finding `grounded_in` the exact DataHub URNs it was derived from, and deterministically re-verified — by re-hashing those entities' current schema and lineage, never by guessing — the moment the world underneath it changes.
 
