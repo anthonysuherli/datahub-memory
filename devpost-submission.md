@@ -4,13 +4,27 @@ Ready-to-paste copy for the Devpost submission form. **Build with DataHub: The A
 
 ## Devpost form fields
 
-- **Title**: `datahub-memory`
-- **Tagline** (one line, ≤120 chars): Institutional memory for data teams: investigate once, inherit forever — and know the moment it's wrong
-- **Elevator pitch** (reused as the first two paragraphs of the Story below, and as the README hero paragraphs):
+Field-by-field, in the order the Devpost form asks. Everything here is ready to paste as-is.
 
-  datahub-memory is a DataHub investigation agent with grounded, self-correcting memory. It reads DataHub entirely through `mcp-server-datahub`'s own tools — search, lineage, schema, and document reads — and writes what it learns back through DataHub's own mutation tools (`update_description`, `save_document`), so the catalog itself inherits the answer, not just the agent's private memory. Every conclusion is persisted as a delapan finding `grounded_in` the exact DataHub URNs it was derived from, and deterministically re-verified — by re-hashing those entities' current schema and lineage, never by guessing — the moment the world underneath it changes.
+| Form field | Value |
+|---|---|
+| **Project name** | `datahub-memory` |
+| **Elevator pitch** (short tagline field; Devpost limits it — this is 155 chars, comfortably inside) | Institutional memory for data teams: investigate once, inherit forever — and know the moment it's wrong. A Claude Code plugin over DataHub's own MCP tools. |
+| **Video demo link** | https://youtu.be/d-R0-WuPzXw |
+| **"Try it out" links** | 1. https://github.com/anthonysuherli/datahub-memory<br>2. https://github.com/datahub-project/datahub-skills/pull/62<br>3. https://github.com/datahub-project/datahub-skills/pull/69 |
+| **Built With** (tags) | `python` · `claude-code` · `model-context-protocol` · `mcp` · `datahub` · `anthropic` · `claude` · `sqlite` · `docker` · `delapan` |
+| **Image gallery** | `cover-comparison.png` (lead — the 16 → 1 moment), `cover-correction.png` (the drift correction landing), `cover-endcard.png` |
+| **Project story** | The `## Inspiration` … `## What's next` sections below, pasted in order. |
 
-  Measured live against a docker-quickstart DataHub v1.5.0.6 + `mcp-server-datahub` v0.6.0 (`demo/counters-baseline.json`): investigating a trust question the first time costs 16 tool calls and 127s; asking the identical question again in a fresh session answers from memory in 1 tool call and 21s. The same pattern is contributed upstream as two DataHub multi-agent skills: [datahub-project/datahub-skills#62](https://github.com/datahub-project/datahub-skills/pull/62) (`datahub-investigate` — the deep-dive) and [#69](https://github.com/datahub-project/datahub-skills/pull/69) (`datahub-memory` — recall-first with documents as the catalog-native memory store).
+Left blank on purpose, because only you can answer them: country of residence, the "newly created during the submission period" confirmation, and the $50 feedback-prize yes/no (the feedback answers themselves are drafted below).
+
+**Before submitting, confirm the YouTube video's visibility is Public** — not Unlisted. An unlisted video is reachable by URL, so the link working is not proof; check it in YouTube Studio. The rules require public.
+
+### Elevator pitch — longer form (the first two paragraphs of the story)
+
+datahub-memory is a DataHub investigation agent with grounded, self-correcting memory, shipped as a **Claude Code plugin**. It reads DataHub entirely through `mcp-server-datahub`'s own tools — search, lineage, schema, and document reads — and writes what it learns back through DataHub's own mutation tools (`update_description`, `save_document`), so the catalog itself inherits the answer, not just the agent's private memory. Every conclusion is persisted as a delapan finding `grounded_in` the exact DataHub URNs it was derived from, and deterministically re-verified — by re-hashing those entities' current schema and lineage, never by guessing — the moment the world underneath it changes.
+
+Measured live against a docker-quickstart DataHub v1.5.0.6 + `mcp-server-datahub` v0.6.0 (`demo/counters-baseline.json`): investigating a trust question the first time costs 16 tool calls and 127s; asking the identical question again in a fresh session answers from memory in 1 tool call and 21s. The same pattern is contributed upstream as two DataHub multi-agent skills: [datahub-project/datahub-skills#62](https://github.com/datahub-project/datahub-skills/pull/62) (`datahub-investigate` — the deep-dive) and [#69](https://github.com/datahub-project/datahub-skills/pull/69) (`datahub-memory` — recall-first with documents as the catalog-native memory store).
 
 ---
 
