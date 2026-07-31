@@ -22,6 +22,26 @@ This project depends on [delapan](https://github.com/anthonysuherli/delapan) (AG
 
 An agent that investigates a data question by walking DataHub — search, lineage, schemas, institutional memory — and persists every conclusion as a delapan finding `grounded_in` the DataHub URNs it derived it from. The next time anyone (or any agent) asks a related question, it answers instantly from memory instead of re-investigating, and — deterministically, by re-hashing each grounded entity's current schema and lineage rather than guessing — knows the moment that memory has gone stale. What it learns is written back to DataHub itself (`update_description`, `save_document`), so the catalog, not just the agent's private memory, inherits the answer.
 
+### The loop
+
+```mermaid
+flowchart TD
+    Q["Question<br/>can I trust monthly_revenue for the board?"] --> R["memory_recall"]
+    R -->|"coverage: gap"| INV["Investigate DataHub<br/>search, lineage, schemas, documents"]
+    R -->|"already known"| F{"question signals<br/>possible staleness?"}
+    F -->|no| A["Answer from memory<br/>1 tool call, 21s"]
+    F -->|yes| C["check_freshness<br/>re-hash every grounded entity"]
+    C -->|"hashes match"| A
+    C -->|"one entity moved"| INV
+    INV --> P["Persist findings<br/>grounded_in URNs + snapshot hashes"]
+    P --> RS["Write-time resolver<br/>ADD, UPDATE, NOOP, SUPERSEDE<br/>stale findings retired, never deleted"]
+    RS --> W["Write back to DataHub<br/>update_description, save_document"]
+    W --> D[("DataHub catalog")]
+    D -.->|"the next question inherits it"| R
+```
+
+The dashed edge is the whole point: the answer lands back in the catalog, so the next person — or the next agent — starts from it instead of re-deriving it.
+
 ## Measured results (canonical run, `demo/counters-baseline.json`)
 
 Three beats, one question ("Can I trust `monthly_revenue` for the board report?"), run live against a docker-quickstart DataHub v1.5.0.6 + `mcp-server-datahub` v0.6.0 on 2026-07-28.
@@ -38,6 +58,8 @@ The retirement in beat 3 is bi-temporal — the stale finding's `invalidated_at`
 
 Prerequisites: Docker running, Python 3.11+, git, sqlite3, and [uv](https://docs.astral.sh/uv/) (required — both forms spawn `uvx mcp-server-datahub`).
 
+### Shared setup
+
 ```bash
 # 1. Install (creates .venv, pulls delapan[local] + claude-agent-sdk + acryl-datahub)
 python3 -m venv .venv
@@ -51,21 +73,74 @@ source .env.local
 # 3. Seed the demo catalog (4-dataset revenue chain + lineage + one incident,
 #    published as a DataHub Document so the agent's own MCP tools can find it)
 python -m demo.seed
+```
 
-# 4. Run the full 3-beat scenario (~5 min). Gates on beat 3 actually producing
-#    a bi-temporal retirement; exits non-zero and prints the failing delta if not.
+One credential is required beyond what `quickstart.sh` writes into `.env.local` (`DATAHUB_GMS_URL`, `DATAHUB_GMS_TOKEN`, `DLP_MEMORY__ENABLED=true`, `DELAPAN_DB_PATH`): **`AI_GATEWAY_API_KEY` (or `OPENAI_API_KEY`)**, for delapan's own embedding/LLM calls behind `memory_recall`/`memory_persist`. See `.env.example` and `docs/R1-decision.md`.
+
+No DataHub Cloud license, no warehouse, no external data source — the whole demo runs against a local OSS `docker quickstart` and a small seeded catalog.
+
+### Path A — Claude Code (the primary interface)
+
+Claude Code **is** the agent here. The plugin registers both MCP servers and the three skills, and your Claude Code session drives the loop — so there is nothing further to authenticate: no `ANTHROPIC_API_KEY`, no Agent SDK runner.
+
+```bash
+claude plugin marketplace add .
+claude plugin install datahub-memory@datahub-memory
+claude          # launch from the same shell where you sourced .env.local
+```
+
+Then reproduce the three beats from the [demo video](https://youtu.be/d-R0-WuPzXw) by typing these prompts:
+
+**Beat 1 — cold start.** Memory is empty, so it has to walk the catalog.
+
+```
+/datahub-memory:investigate Can I trust monthly_revenue for the board report?
+```
+
+*Expect:* `memory_recall` returns coverage `gap` → ~16 DataHub tool calls (search → lineage → schemas → documents) → 3-4 findings persisted → a description and a report document written back to `stg_payments`. Roughly two minutes. Watch `stg_payments` in the DataHub UI at http://localhost:9002 to see the write-back land.
+
+**Beat 2 — inherit.** Same question, clean context. Run `/clear` first, or start a second `claude`.
+
+```
+/datahub-memory:recall Can I trust monthly_revenue for the board report?
+```
+
+*Expect:* one `memory_recall` call, **zero** DataHub calls, and an answer citing beat 1's finding ids and URNs. Seconds, not minutes — this is the 16 → 1 comparison.
+
+**Beat 3 — drift.** In another shell, rename a column out from under the memory:
+
+```bash
+python -m demo.drift      # stg_payments.amount_usd -> amount
+```
+
+```
+/datahub-memory:investigate Can I trust monthly_revenue for the board report? (re-verify: upstream schema may have changed)
+```
+
+*Expect:* the staleness wording routes to `check_freshness`, which re-hashes all four grounded entities and names `stg_payments` — not the lineage root — as the one that moved. The stale trust verdict is retired bi-temporally and the now-wrong description is corrected in DataHub.
+
+Confirm the retirement straight from the store:
+
+```bash
+sqlite3 .data/delapan.db \
+  "SELECT CASE WHEN invalidated_at IS NULL THEN 'live' ELSE 'retired' END, COUNT(*) FROM findings GROUP BY 1;"
+sqlite3 .data/delapan.db "SELECT op, COUNT(*) FROM resolution_events GROUP BY op;"
+```
+
+### Path B — scripted CLI (non-interactive)
+
+The same three beats without a human in the loop, with a hard gate on beat 3:
+
+```bash
+# Full 3-beat scenario (~5 min). Exits non-zero and prints the failing delta if
+# beat 3 doesn't actually produce a bi-temporal retirement.
 demo/run_demo.sh
 
-# Re-check the beat-3 gate against the current DB without spending a live run:
+# Re-check that gate against the DB a previous full run left behind:
 demo/run_demo.sh --verify-only
 ```
 
-Two credential sets are required beyond what `quickstart.sh` sets up automatically (`DATAHUB_GMS_URL`, `DATAHUB_GMS_TOKEN`, `DLP_MEMORY__ENABLED=true`, `DELAPAN_DB_PATH`) — see `.env.example` and `docs/R1-decision.md` for how each was verified:
-
-- **`AI_GATEWAY_API_KEY` (or `OPENAI_API_KEY`)** — delapan's own embedding/LLM calls for `memory_recall`/`memory_persist` fail without one of these set in the environment before `demo/run_demo.sh` (or `python -m datahub_memory`) runs.
-- **Claude Code / Anthropic auth** — the agent loop runs on the Claude Agent SDK (`claude_agent_sdk.query`), which needs either a logged-in Claude Code CLI on the host or `ANTHROPIC_API_KEY` set, to actually drive the investigation turns.
-
-No DataHub Cloud license, no warehouse, no external data source — the whole demo runs against a local OSS `docker quickstart` and a small seeded catalog.
+This path drives the turns itself via the Claude Agent SDK, so unlike Path A it **also** needs a logged-in `claude` CLI on the host or `ANTHROPIC_API_KEY` set. `--verify-only` reads snapshots written by a full run, so run the full scenario at least once first.
 
 ## Architecture
 
@@ -119,20 +194,15 @@ No DataHub Cloud license, no warehouse, no external data source — the whole de
 
 ## Claude Code plugin
 
-The same agent ships as a Claude Code plugin (`.claude-plugin/`, `mcp.json`, `skills/`) alongside the CLI:
+Claude Code is the primary interface — see [Path A](#path-a--claude-code-the-primary-interface) above for the install and the three prompts. This section is what that install actually wires up.
 
-```bash
-claude plugin marketplace add /path/to/datahub-memory
-claude plugin install datahub-memory@datahub-memory
-```
-
-This registers two stdio MCP servers (`memory` — a `FastMCP` wrapper around the same `bridge`/`writeback` code the CLI uses, via `scripts/mcp-server.sh`; `datahub` — `uvx mcp-server-datahub`) and three skills:
+The plugin (`.claude-plugin/`, `mcp.json`, `skills/`) registers two stdio MCP servers (`memory` — a `FastMCP` wrapper around the same `bridge`/`writeback` code the CLI uses, via `scripts/mcp-server.sh`; `datahub` — `uvx mcp-server-datahub`) and three skills:
 
 - `/datahub-memory:investigate` — the full memory-first loop (recall → walk lineage/institutional memory when memory is thin → persist 2-4 grounded findings → hand off to write-back).
 - `/datahub-memory:recall` — memory-only lookup with the bounded freshness check; escalates to `/investigate` on `gap` coverage or confirmed drift.
 - `/datahub-memory:writeback` — attach a description or report to a DataHub entity; DataHub's own mutation tools first, the emitter fallback tools only if those fail.
 
-Requires `uv` on the host (the launcher prints the install command and exits if it's missing) and the same environment variables as the CLI (`DATAHUB_GMS_URL`, `DATAHUB_GMS_TOKEN`, `AI_GATEWAY_API_KEY`/`OPENAI_API_KEY`).
+Requires `uv` on the host (the launcher prints the install command and exits if it's missing) and `DATAHUB_GMS_URL`, `DATAHUB_GMS_TOKEN`, `AI_GATEWAY_API_KEY`/`OPENAI_API_KEY` exported in the shell you launch `claude` from — `mcp.json` passes them through to the servers. Note this is one credential fewer than the CLI: Claude Code supplies the model turns itself, so no Agent SDK auth is involved.
 
 ## Upstream contribution
 

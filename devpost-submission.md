@@ -36,6 +36,10 @@ We had a memory engine already built for this shape of problem: [delapan](https:
 
 Measured on a live 3-beat run: the second time the same question is asked, the agent needs 1 tool call and ~21 seconds instead of 16 tool calls and ~127 seconds. When the upstream schema drifts between asks, the same deterministic mechanism that answers instantly from memory is the one that catches the drift and forces a targeted re-investigation — the stale finding is retired bi-temporally (never deleted), and a corrected one takes its place.
 
+The loop is drawn as a diagram in [the README](README.md#the-loop) — rendered there rather than inline here, since Devpost's description field doesn't render Mermaid.
+
+**Claude Code is the primary interface.** It ships as a Claude Code plugin with three slash commands — `/datahub-memory:investigate`, `/datahub-memory:recall`, `/datahub-memory:writeback` — over two MCP servers (delapan-backed memory, and `mcp-server-datahub`). The scripted CLI exists for a non-interactive, gated run; everything in the demo video is the plugin driving Claude Code. See the testing instructions below for the exact prompts.
+
 ## How we built it
 
 - **Two MCP servers, one Claude Agent SDK loop.** `mcp-server-datahub` (stdio, OSS, `TOOLS_IS_MUTATION_ENABLED=true`) alongside delapan's tools exposed as in-process SDK tools (`memory_recall`, `memory_persist`, `check_freshness`, `writeback_description`, `writeback_report`). The agent loop and prompt policy (`datahub_memory/agent.py`, `prompts.py`) are the only new orchestration code — delapan's resolver, coverage banding, and provenance model are mature, shipped engine code we're consuming, not reimplementing.
@@ -73,6 +77,8 @@ Measured on a live 3-beat run: the second time the same question is asked, the a
 
 **Prerequisites:** Docker running, Python 3.11+, git, sqlite3, and [uv](https://docs.astral.sh/uv/) (required — both forms spawn `uvx mcp-server-datahub`).
 
+**Shared setup — both paths need this:**
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
@@ -80,19 +86,49 @@ pip install -e ".[dev]"
 demo/quickstart.sh          # docker quickstart + token mint -> .env.local
 source .env.local
 python -m demo.seed         # seed the demo catalog + incident document
+```
+
+### Path A — Claude Code (the primary interface)
+
+Claude Code **is** the agent: the plugin registers both MCP servers and the three skills, and your Claude Code session drives the loop. Nothing further to authenticate — no `ANTHROPIC_API_KEY`, no Agent SDK runner.
+
+```bash
+claude plugin marketplace add .
+claude plugin install datahub-memory@datahub-memory
+claude          # launch from the same shell where you sourced .env.local
+```
+
+The three beats from the video, as prompts you can paste:
+
+| # | Prompt | What should happen |
+|---|---|---|
+| 1 | `/datahub-memory:investigate Can I trust monthly_revenue for the board report?` | Memory is `gap` → ~16 DataHub tool calls → 3-4 findings persisted → description + report document written back to `stg_payments`. ~2 min. Watch it land at http://localhost:9002. |
+| 2 | `/clear`, then `/datahub-memory:recall Can I trust monthly_revenue for the board report?` | One `memory_recall`, **zero** DataHub calls, answer cites beat 1's finding ids and URNs. Seconds — the 16 → 1 comparison. |
+| 3 | `python -m demo.drift` in another shell, then `/datahub-memory:investigate Can I trust monthly_revenue for the board report? (re-verify: upstream schema may have changed)` | The staleness wording routes to `check_freshness`, which re-hashes all four grounded entities and names `stg_payments` — not the lineage root — as the one that moved. Stale verdict retired bi-temporally; wrong description corrected. |
+
+Confirm the retirement straight from the store, no agent involved:
+
+```bash
+sqlite3 .data/delapan.db "SELECT op, COUNT(*) FROM resolution_events GROUP BY op;"
+```
+
+### Path B — scripted CLI (non-interactive)
+
+```bash
 demo/run_demo.sh            # all 3 beats, gates on bi-temporal retirement evidence
+demo/run_demo.sh --verify-only   # re-check that gate after a full run
 ```
 
 **Token generation** is fully automated by `demo/quickstart.sh` — no manual DataHub UI steps required. It logs in as the quickstart's default `datahub`/`datahub` user, then mints a personal access token via GraphQL (`createAccessToken`). One quirk worth knowing if you watch it run: the very first attempt(s) right after `docker check` reports healthy typically 403 with "Unauthorized to perform this action," even for the root user — the bootstrap policy that grants token-generation privilege is indexed asynchronously and isn't queryable by the authorizer for roughly 30-60 seconds after GMS comes up healthy. This is expected, not a failure; `quickstart.sh` retries the mutation for up to 2 minutes before giving up. The resulting `DATAHUB_GMS_URL`/`DATAHUB_GMS_TOKEN` are written to `.env.local` automatically.
 
 **Required keys beyond what `quickstart.sh` provides:**
 
-| Variable | Why |
-|---|---|
-| `AI_GATEWAY_API_KEY` **or** `OPENAI_API_KEY` | delapan's embedding/LLM calls (`memory_recall`/`memory_persist`) fail without one of these. |
-| Claude Code login, **or** `ANTHROPIC_API_KEY` | The agent loop runs on the Claude Agent SDK, which drives the actual investigation turns. |
+| Variable | Path A (Claude Code) | Path B (CLI) |
+|---|---|---|
+| `AI_GATEWAY_API_KEY` **or** `OPENAI_API_KEY` | Required — delapan's embedding/LLM calls (`memory_recall`/`memory_persist`) fail without one. | Required, same reason. |
+| Claude Code login, **or** `ANTHROPIC_API_KEY` | **Not needed** — you are already in Claude Code, which supplies the model turns. | Required — the Agent SDK drives the turns itself. |
 
-Both must be present in the environment before `demo/run_demo.sh` (or `python -m datahub_memory "..."`) runs — see `.env.example`.
+Export them in the shell you launch `claude` from (Path A) or run `demo/run_demo.sh` from (Path B) — `mcp.json` passes them through to the MCP servers. See `.env.example`.
 
 **Expected runtime:** the 3-beat scenario itself is ~4 minutes of live agent time (measured: 127.2s + 20.9s + 98.4s ≈ 4.1 min for beats 1-3 combined), plus first-time Docker image pulls for `docker quickstart` (5-15 minutes on a cold Docker cache, one-time). `demo/run_demo.sh --verify-only` re-checks the beat-3 retirement gate against whatever database a prior full run left behind, with zero new agent spend, in under a second — useful for re-verifying the claim without re-running the live scenario.
 
