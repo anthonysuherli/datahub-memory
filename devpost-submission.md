@@ -100,6 +100,21 @@ Both must be present in the environment before `demo/run_demo.sh` (or `python -m
 
 ---
 
+## Sample outputs
+
+Judges are not required to run anything — [`examples/`](examples/README.md) holds real artifacts from real runs, verbatim, so the quality of what the agent produces can be assessed by reading:
+
+| File | What it is |
+|---|---|
+| [`datahub-writebacks.md`](examples/datahub-writebacks.md) | **The artifacts written back into DataHub** — an agent-authored trust-review Document attached to all four datasets in the chain, and the `stg_payments` description. Each is shown as beat 1 wrote it *and* as beat 3 corrected it after the schema drift, read back out of the live catalog via GMS aspect reads. This is the "contribute back to the graph" half of the loop, in full. |
+| [`investigation-answer.md`](examples/investigation-answer.md) | The agent's own answers for beat 1 and beat 3, plus the full finding content persisted for each, with `grounded_in` URNs and snapshot hashes. |
+| [`resolution-log.md`](examples/resolution-log.md) | The `resolution_events` rows and per-beat ADD/UPDATE/NOOP deltas the write-time resolver produced. |
+| [`verify-only-output.md`](examples/verify-only-output.md) | `demo/run_demo.sh --verify-only` re-checking the bi-temporal-retirement gate straight against SQLite. |
+
+The write-backs come from the run captured in the demo video, so what the video shows landing on screen at 0:50 and 2:00 can be read here in full.
+
+---
+
 ## Video (final cut — 2:31, split-screen, caption-driven)
 
 **https://youtu.be/d-R0-WuPzXw**
