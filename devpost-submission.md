@@ -16,7 +16,7 @@ Field-by-field, in the order the Devpost form asks. Everything here is ready to 
 | **Image gallery** | `cover-comparison.png` (lead — the 16 → 1 moment), `cover-correction.png` (the drift correction landing), `cover-endcard.png` |
 | **Project story** | The `## Inspiration` … `## What's next` sections below, pasted in order. |
 
-Left blank on purpose, because only you can answer them: country of residence, the "newly created during the submission period" confirmation, and the $50 feedback-prize yes/no (the feedback answers themselves are drafted below).
+**Additional info tab is complete** (verified live 2026-07-31): challenge category, repo URL, project URL (`#quickstart-for-judges`), examples/ link, DataHub technologies (OSS / Core Platform + MCP Server + Skills), the upstream-contribution write-up, country, the pre-existing-code disclosure, and all four feedback-prize answers. No empty fields remain on that tab.
 
 **Before submitting, confirm the YouTube video's visibility is Public** — not Unlisted. An unlisted video is reachable by URL, so the link working is not proof; check it in YouTube Studio. The rules require public.
 
@@ -172,6 +172,8 @@ The write-backs come from the run captured in the demo video, so what the video 
 
 ## Video (final cut — 2:31, split-screen, caption-driven)
 
+Full storyline and verbatim caption script: [`docs/video-script.md`](docs/video-script.md).
+
 **https://youtu.be/d-R0-WuPzXw**
 
 Composed agentically as a Remotion composition, and **split-screen throughout the
@@ -189,17 +191,18 @@ brackets held over the causal moments** — the write-back landing in Beat A, an
 `check_freshness` plus the correction landing in Beat B. Silent by design and fully
 legible sound-off; the captions below double as a voice-over script if dubbed later.
 
-| Scene | Time | Screen | Caption / story job |
+| Scene | Time | Screen | Caption |
 |---|---|---|---|
-| S1 | 0:00 | Black + kinetic hook | "Someone already answered this." / "You just don't know it." → "a Claude Code plugin that remembers what your data team already learned" |
-| Autocomplete | 0:08 | Real TUI, `/datahub-memory:` popup building up | This ships as a Claude Code plugin — the commands are real |
-| Beat A | 0:12 | **Split:** TUI investigating ‖ `stg_payments` Documentation tab | No memory yet: lineage → schemas → documents → the incident four hops upstream |
-| ↳ | 0:46 | caption in, pane still reads "No documentation yet" | "It **writes the answer back** — watch the description appear" |
-| ↳ | 0:50 | **1× real time:** `Skill(datahub-memory:writeback)` on the left, the description appearing on the right | The catalog itself inherits the answer — cause and effect in one wall-clock window |
-| Inherit | 0:58 | Beat-2 terminal + animated 16→1 / 127s→21s counter | Same question, new session, answered from memory — numbers read from the database, not the transcript |
-| Drift still | 1:12 | Drifted schema still | "Upstream, a column was renamed" (applied before recording — see the honesty note) |
-| Beat B | 1:15 | **Split:** TUI re-verifying ‖ same Documentation tab | **1×:** the staleness signal routes to `check_freshness`, which re-hashes every grounded entity and reports "Drift confirmed: `stg_payments` has changed" |
-| ↳ | 1:24 | | "Memory that never updates is just amnesia with better branding" |
-| ↳ | 2:00 | **1×:** corrected description lands in DataHub | "⚠️ Column renamed, units now unasserted (detected 2026-07-29)" — the stale answer corrected, nothing deleted, everything dated |
-| Gate | 2:05 | `--verify-only` gate output | The gate reads resolution events straight from SQLite — every number traces to this run |
-| End card | 2:13 | End card | investigate once · inherit forever · know the moment it's wrong + plugin + repo + PRs #62 and #69 |
+| S1 | 0:00 | Black + kinetic hook | "Someone already answered this." / "You just don't know it." |
+| Tagline | 0:05 | Black | "**datahub-memory** — a memory layer for DataHub. Five tools, so an answer has somewhere to live." |
+| Autocomplete | 0:08 | Real TUI, `/datahub-memory:` popup building up | "Three skills call those tools. This one **investigates.**" |
+| Beat A | 0:12 | **Split:** TUI investigating ‖ `stg_payments` Documentation tab | "Memory is empty — so it **goes and earns the answer:** lineage, schemas, documents." |
+| ↳ | 0:46 | caption in, pane still reads "No documentation yet" | "**writeback** puts it in the catalog — watch the description appear." |
+| ↳ | 0:50 | **1× real time:** `Skill(datahub-memory:writeback)` left, description appearing right | cause and effect in one wall-clock window |
+| Inherit | 0:58 | Beat-2 terminal + animated 16→1 / 127s→21s counter | "Same question, new session. **memory_recall** answers it — 1 call instead of 16, read from the database." |
+| Drift still | 1:12 | Drifted schema still | "Upstream, **a column was renamed.**" |
+| Beat B | 1:15 | **Split:** TUI re-verifying ‖ same Documentation tab | "Memory that never updates is just **amnesia with better branding.**" |
+| ↳ | ~1:40 | **1×:** `check_freshness` naming the drifted entity | "**check_freshness** re-hashes every grounded entity and names the one that moved." |
+| ↳ | 2:00 | **1×:** corrected description lands in DataHub | "The stale answer is **corrected** — nothing deleted, everything dated." |
+| Gate | 2:05 | `--verify-only` gate output | "The gate reads resolution events **straight from SQLite.** Every number in the repo traces to this run." |
+| End card | 2:13 | End card | the layer · its five tools · 16× fewer tool calls · the three skills · repo + PRs #62 and #69 |
