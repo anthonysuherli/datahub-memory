@@ -5,14 +5,14 @@
     "email": "anthonysuherli@gmail.com"
   },
   "metadata": {
-    "description": "datahub-memory — grounded institutional memory for data teams: DataHub investigation agent + delapan write-time-resolved memory.",
+    "description": "datahub-memory \u2014 grounded, self-correcting memory for DataHub: a memory layer any agent can build on, plus the skills that do.",
     "version": "0.1.0"
   },
   "plugins": [
     {
       "name": "datahub-memory",
       "source": "./",
-      "description": "DataHub investigation agent with delapan write-time-resolved memory. /datahub-memory:investigate, /datahub-memory:recall, /datahub-memory:writeback over the memory + datahub MCP servers.",
+      "description": "Grounded, self-correcting memory for DataHub: five MCP tools (recall, persist, freshness, two write-backs) any agent can build on. /datahub-memory:investigate, :recall, :writeback are the skills that do.",
       "version": "0.1.0",
       "strict": false
     }

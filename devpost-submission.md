@@ -9,7 +9,7 @@ Field-by-field, in the order the Devpost form asks. Everything here is ready to 
 | Form field | Value |
 |---|---|
 | **Project name** | `datahub-memory` |
-| **Elevator pitch** (short tagline field; Devpost limits it — this is 155 chars, comfortably inside) | Institutional memory for data teams: investigate once, inherit forever — and know the moment it's wrong. A Claude Code plugin over DataHub's own MCP tools. |
+| **Elevator pitch** (short tagline field; Devpost limits it — this is 169 chars, comfortably inside) | Grounded, self-correcting memory for DataHub: five MCP tools any agent can build on. Investigate once, inherit forever — and know the moment the catalog moves under you. |
 | **Video demo link** | https://youtu.be/d-R0-WuPzXw |
 | **"Try it out" links** | 1. https://github.com/anthonysuherli/datahub-memory<br>2. https://github.com/datahub-project/datahub-skills/pull/62<br>3. https://github.com/datahub-project/datahub-skills/pull/69 |
 | **Built With** (tags) | `python` · `claude-code` · `model-context-protocol` · `mcp` · `datahub` · `anthropic` · `claude` · `sqlite` · `docker` · `delapan` |
@@ -22,7 +22,9 @@ Left blank on purpose, because only you can answer them: country of residence, t
 
 ### Elevator pitch — longer form (the first two paragraphs of the story)
 
-datahub-memory is a DataHub investigation agent with grounded, self-correcting memory, shipped as a **Claude Code plugin**. It reads DataHub entirely through `mcp-server-datahub`'s own tools — search, lineage, schema, and document reads — and writes what it learns back through DataHub's own mutation tools (`update_description`, `save_document`), so the catalog itself inherits the answer, not just the agent's private memory. Every conclusion is persisted as a delapan finding `grounded_in` the exact DataHub URNs it was derived from, and deterministically re-verified — by re-hashing those entities' current schema and lineage, never by guessing — the moment the world underneath it changes.
+datahub-memory is a **memory layer for DataHub, not an agent**. It exposes five MCP tools — `memory_recall`, `memory_persist`, `check_freshness`, `writeback_description`, `writeback_report` — that give any agent somewhere to put what it concludes. Every conclusion is persisted as a delapan finding `grounded_in` the exact DataHub URNs it was derived from, deduplicated and self-corrected by a write-time resolver, and deterministically re-verified — by re-hashing those entities' current schema and lineage, never by guessing — the moment the world underneath it changes. Write-back goes through DataHub's own mutation tools (`update_description`, `save_document`), so the catalog itself inherits the answer, not just a private store.
+
+Three Claude Code skills ship on top of it — `/datahub-memory:investigate` (the flagship: recall first, walk lineage/schemas/documents only where memory is thin, persist, write back), `/datahub-memory:recall` (memory-only lookup with the freshness check), and `/datahub-memory:writeback`. The investigation agent is the headline consumer of the memory layer, not the product itself — which is the whole point: the layer doesn't care which agent is calling it.
 
 Measured live against a docker-quickstart DataHub v1.5.0.6 + `mcp-server-datahub` v0.6.0 (`demo/counters-baseline.json`): investigating a trust question the first time costs 16 tool calls and 127s; asking the identical question again in a fresh session answers from memory in 1 tool call and 21s. The same pattern is contributed upstream as two DataHub multi-agent skills: [datahub-project/datahub-skills#62](https://github.com/datahub-project/datahub-skills/pull/62) (`datahub-investigate` — the deep-dive) and [#69](https://github.com/datahub-project/datahub-skills/pull/69) (`datahub-memory` — recall-first with documents as the catalog-native memory store).
 
@@ -30,7 +32,9 @@ Measured live against a docker-quickstart DataHub v1.5.0.6 + `mcp-server-datahub
 
 ## Inspiration
 
-datahub-memory is a DataHub investigation agent with grounded, self-correcting memory. It reads DataHub entirely through `mcp-server-datahub`'s own tools — search, lineage, schema, and document reads — and writes what it learns back through DataHub's own mutation tools (`update_description`, `save_document`), so the catalog itself inherits the answer, not just the agent's private memory. Every conclusion is persisted as a delapan finding `grounded_in` the exact DataHub URNs it was derived from, and deterministically re-verified — by re-hashing those entities' current schema and lineage, never by guessing — the moment the world underneath it changes.
+datahub-memory is a **memory layer for DataHub, not an agent**. It exposes five MCP tools — `memory_recall`, `memory_persist`, `check_freshness`, `writeback_description`, `writeback_report` — that give any agent somewhere to put what it concludes. Every conclusion is persisted as a delapan finding `grounded_in` the exact DataHub URNs it was derived from, deduplicated and self-corrected by a write-time resolver, and deterministically re-verified — by re-hashing those entities' current schema and lineage, never by guessing — the moment the world underneath it changes. Write-back goes through DataHub's own mutation tools (`update_description`, `save_document`), so the catalog itself inherits the answer, not just a private store.
+
+Three Claude Code skills ship on top of it — `/datahub-memory:investigate` (the flagship: recall first, walk lineage/schemas/documents only where memory is thin, persist, write back), `/datahub-memory:recall` (memory-only lookup with the freshness check), and `/datahub-memory:writeback`. The investigation agent is the headline consumer of the memory layer, not the product itself — which is the whole point: the layer doesn't care which agent is calling it.
 
 Measured live against a docker-quickstart DataHub v1.5.0.6 + `mcp-server-datahub` v0.6.0 (`demo/counters-baseline.json`): investigating a trust question the first time costs 16 tool calls and 127s; asking the identical question again in a fresh session answers from memory in 1 tool call and 21s. The same pattern is contributed upstream as two DataHub multi-agent skills: [datahub-project/datahub-skills#62](https://github.com/datahub-project/datahub-skills/pull/62) (`datahub-investigate` — the deep-dive) and [#69](https://github.com/datahub-project/datahub-skills/pull/69) (`datahub-memory` — recall-first with documents as the catalog-native memory store).
 
@@ -40,19 +44,20 @@ We had a memory engine already built for this shape of problem: [delapan](https:
 
 ## What it does
 
-`datahub-memory` is an agent that:
+`datahub-memory` is a memory layer. An agent that calls its five tools gets:
 
-1. **Investigates** — given a question like "Can I trust `monthly_revenue` for the board report?", it walks DataHub via MCP (search → lineage → schema → institutional memory) and forms a grounded conclusion.
-2. **Remembers** — every conclusion is persisted as a delapan finding whose `grounded_in` field carries the exact DataHub URNs (plus a schema+lineage hash) it was derived from. delapan's write-time resolver decides ADD / UPDATE / NOOP / SUPERSEDE against everything already known — memory that dedups and self-corrects at write time, not read time.
-3. **Answers instantly the second time** — a related question routes to memory first. If coverage is `rich` or `sparse`, it answers directly from the finding, citing URNs, with zero new DataHub calls.
-4. **Knows when memory has gone stale** — if the question itself hints at possible drift ("re-verify", "has this changed"), a deterministic `check_freshness` tool re-hashes every grounded entity's *current* schema and lineage and diffs it against what was recorded. No guessing which entity might have moved — it checks all of them and reports exactly which ones did.
-5. **Writes back** — descriptions and reports go straight into DataHub (`update_description`, `save_document`, DataHub's own MCP mutation tools), so the next investigator — human or agent — inherits the answer from the catalog itself, not just from this tool's private memory.
+1. **Somewhere to put a conclusion** — `memory_persist` stores it as a delapan finding whose `grounded_in` field carries the exact DataHub URNs (plus a schema+lineage hash) it was derived from. delapan's write-time resolver decides ADD / UPDATE / NOOP / SUPERSEDE against everything already known — memory that dedups and self-corrects at write time, not read time.
+2. **Memory-first answers** — `memory_recall` returns a preamble plus a coverage band (`rich` / `sparse` / `gap`) and a route. On `rich` or `sparse` the caller answers straight from the finding, citing URNs, with zero new DataHub calls.
+3. **Deterministic staleness detection** — `check_freshness` re-hashes every grounded entity's *current* schema and lineage and diffs it against what was recorded. No guessing which entity might have moved — it checks all of them and reports exactly which ones did.
+4. **A path back into the catalog** — `writeback_description` / `writeback_report` push what was learned into DataHub itself, so the next investigator — human or agent — inherits the answer from the catalog rather than from this tool's private store.
+
+The `/datahub-memory:investigate` skill is what sequences those into an investigation: recall first, walk DataHub through `mcp-server-datahub` (search → lineage → schema → documents) only where memory is thin, persist 2-4 grounded findings, hand off to write-back. `/datahub-memory:recall` and `/datahub-memory:writeback` are two smaller consumers of the same layer — and nothing stops a third-party agent from being another.
 
 Measured on a live 3-beat run: the second time the same question is asked, the agent needs 1 tool call and ~21 seconds instead of 16 tool calls and ~127 seconds. When the upstream schema drifts between asks, the same deterministic mechanism that answers instantly from memory is the one that catches the drift and forces a targeted re-investigation — the stale finding is retired bi-temporally (never deleted), and a corrected one takes its place.
 
 The loop is drawn as a diagram in [the README](README.md#the-loop) — rendered there rather than inline here, since Devpost's description field doesn't render Mermaid.
 
-**Claude Code is the primary interface.** It ships as a Claude Code plugin with three slash commands — `/datahub-memory:investigate`, `/datahub-memory:recall`, `/datahub-memory:writeback` — over two MCP servers (delapan-backed memory, and `mcp-server-datahub`). The scripted CLI exists for a non-interactive, gated run; everything in the demo video is the plugin driving Claude Code. See the testing instructions below for the exact prompts.
+**Claude Code is the primary interface.** The memory layer ships as a Claude Code plugin with three slash commands — `/datahub-memory:investigate`, `/datahub-memory:recall`, `/datahub-memory:writeback` — over two MCP servers (delapan-backed memory, and `mcp-server-datahub`). The scripted CLI exists for a non-interactive, gated run; everything in the demo video is the plugin driving Claude Code. See the testing instructions below for the exact prompts.
 
 ## How we built it
 

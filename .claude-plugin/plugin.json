@@ -1,6 +1,6 @@
 {
   "name": "datahub-memory",
-  "description": "Grounded institutional memory for data teams — a DataHub investigation agent backed by delapan write-time-resolved memory. Skills: /datahub-memory:investigate (memory-first loop: recall → walk lineage/incidents when memory is thin → persist findings → write back), /datahub-memory:recall (memory-only lookup with a deterministic freshness check), /datahub-memory:writeback (attach a description or report to a DataHub entity, mutation tools primary, emitter fallback). Backed by two MCP servers: memory (delapan-grounded findings, local tier) and datahub (mcp-server-datahub).",
+  "description": "Grounded, self-correcting memory for DataHub \u2014 a memory layer, not an agent. Exposes five MCP tools (memory_recall, memory_persist, check_freshness, writeback_description, writeback_report) backed by delapan's write-time resolver, so any agent has somewhere to put what it concludes, grounded in DataHub URNs and deterministically re-verified when the catalog moves under it. Three skills consume it: /datahub-memory:investigate (the flagship \u2014 recall first, walk lineage/schemas/documents only where memory is thin, persist, write back), /datahub-memory:recall (memory-only lookup with the freshness check), and /datahub-memory:writeback (record a conclusion onto the entity itself). Backed by two MCP servers: memory (this layer, local tier) and datahub (mcp-server-datahub).",
   "version": "0.1.0",
   "author": {
     "name": "Anthony Suherli",
@@ -8,7 +8,14 @@
   },
   "homepage": "https://github.com/anthonysuherli/datahub-memory",
   "license": "Apache-2.0",
-  "keywords": ["datahub", "data-catalog", "memory", "delapan", "lineage", "mcp"],
+  "keywords": [
+    "datahub",
+    "data-catalog",
+    "memory",
+    "delapan",
+    "lineage",
+    "mcp"
+  ],
   "skills": [
     "./skills/investigate",
     "./skills/recall",
