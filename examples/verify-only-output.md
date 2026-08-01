@@ -1,8 +1,12 @@
 # `demo/run_demo.sh --verify-only` output
 
-Pulled verbatim from the canonical run behind `demo/counters-baseline.json` (2026-07-28, live against docker-quickstart DataHub v1.5.0.6 + `mcp-server-datahub` v0.6.0).
+Captured verbatim from a separate successful run of the same three-beat scenario. Resolver ADD
+counts can vary with model classification; the gate's invariant is an `UPDATE` or `SUPERSEDE` event
+plus an increase in retired findings. The canonical timing and tool-call metrics remain
+[`demo/counters-baseline.json`](../demo/counters-baseline.json).
 
-Run directly against this repo's current `.data/delapan.db` (the canonical run's own database — no live agent call, no DataHub round trip, pure SQLite queries):
+This command made no live agent call and no DataHub round trip; it queried the local SQLite database
+and snapshots left by the preceding full run:
 
 ```
 == --verify-only: exercising the beat-3 gate against the CURRENT DB, no beats run ==
@@ -24,4 +28,7 @@ Can I trust monthly_revenue for the board report as of 2026-  live
 1
 ```
 
-Exit code `0`. This is the runner's beat-3 gate — it requires both (a) the `resolution_events` delta since the pre-beat-3 snapshot to contain at least one `UPDATE` or `SUPERSEDE`, and (b) the `findings.invalidated_at` count to have actually increased — and aborts non-zero, naming exactly which ops did fire, if either condition fails.
+Exit code `0`. The historical command output above uses the runner's original “bi-temporal” label;
+the implemented guarantee is more precisely **versioned soft retirement**. The gate requires both
+(a) an `UPDATE` or `SUPERSEDE` event since the pre-beat-3 snapshot and (b) an increase in rows whose
+`findings.invalidated_at` is set. It aborts non-zero if either condition fails.

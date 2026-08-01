@@ -1,21 +1,10 @@
 # resolution-log excerpt (resolution_events / ops-delta)
 
-Pulled verbatim from the canonical run behind `demo/counters-baseline.json` (2026-07-28, live against docker-quickstart DataHub v1.5.0.6 + `mcp-server-datahub` v0.6.0), sourced from the run's own `.data/delapan.db`.
+Captured from the canonical run behind `demo/counters-baseline.json` (2026-07-28, live against
+docker-quickstart DataHub v1.5.0.6 + `mcp-server-datahub` v0.6.0).
 
-The full `resolution_events` table for the canonical run, as it stands in `.data/delapan.db` (`op`, `reason` truncated to 80 chars, chronological):
-
-```
-op      reason
-------  --------------------------------------------------------------------------------
-ADD     no similar finding
-ADD     While related to the same incident, this finding specifically answers 'what inci
-ADD     This finding specifically documents the lineage chain of monthly_revenue (4-hop
-ADD     This finding covers the purpose and schema of monthly_revenue specifically, whic
-ADD     New finding about schema drift detection on stg_payments on 2026-07-28, includin
-UPDATE  This is a re-verification of the same trust question about monthly_revenue for t
-```
-
-Reduced to `demo/run_demo.sh`'s own ops-delta form (per-beat, what its `ops_delta` function prints — `before` and `after` are `select op, count(*) from resolution_events group by op` snapshots):
+The runner's per-beat deltas are the canonical resolver counts. `before` and `after` are
+`select op, count(*) from resolution_events group by op` snapshots:
 
 ```
 --- resolution_events delta after beat 1 ---
